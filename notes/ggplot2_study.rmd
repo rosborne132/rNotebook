@@ -1,0 +1,34 @@
+---
+title: "ggplot2 Study"
+author: "Rob Osborne"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Install ggplot2 package if not already installed
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  install.packages("ggplot2")
+}
+
+if (!requireNamespace("jsonlite", quietly = TRUE)) {
+  install.packages("jsonlite")
+}
+```
+
+```{r setup, include=FALSE}
+# Load the ggplot2 package
+library(ggplot2)
+```
+
+```{r setup, include=FALSE}
+# Use the built-in mtcars dataset
+data <- mtcars
+
+# Create a scatter plot
+ggplot(data, aes(x = wt, y = mpg)) +
+  geom_point() +
+  ggtitle("Scatter Plot of Car Weight vs. MPG") +  # Add a title
+  xlab("Weight (1000 lbs)") +                      # Label for x-axis
+  ylab("Miles per Gallon")                         # Label for y-axis
+```

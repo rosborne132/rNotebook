@@ -1,0 +1,197 @@
+---
+title: 'Introduction to ggplot2: Points'
+author: "Rob Osborne"
+output: html_document
+---
+
+
+In this lab we will be learning about some basics with `ggplot2`.
+
+## Part I: Learning about your data
+
+### Step 1: Load in the data
+
+First let's load in the `diamonds` dataset.  This data set is in the `tidyverse` package, so make sure that that library is called first.
+
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+data("diamonds")
+```
+
+### Step 2: Learn a little bit about this data
+
+The `str` function allows you to learn about the structure of a dataset.
+
+```{r}
+str(diamonds)
+```
+
+### It's Your Turn! Learning by doing
+
+1. How many rows are in `diamonds`?  How many columns?
+    53940 row and 10 columns
+
+2. Which variables in `diamonds` are categorical? Which variables are continuous?
+(Hint: look at the output for `str()`)
+    Categorical: cut, color, clarity
+    Continuous: carat, depth, table, price, x, y, z
+
+3. What does the `table` variable describe?  Read the help for `?diamonds` to find out.
+    `table` is the width of top of diamond relative to widest point (43-95)
+
+## Part II: Start with a basic scatterplot
+
+Here is a simple scatterplot of `price` vs `carat`:
+
+```{r warning=FALSE, message=FALSE}
+ggplot(data = diamonds, aes(x = carat, y = price)) +
+  geom_point()
+```
+
+What do you observe?
+
+### It's Your Turn! Learning by doing
+
+1. Run `ggplot(data=diamonds)`.  What do you see?
+    A blank canvas
+2. Make a scatterplot of `price` vs `depth`.
+```{r}
+ggplot(data = diamonds, aes(x = depth, y = price)) +
+  geom_point()
+```
+
+3. What happens if you make a scatterplot of `cut` vs `clarity`? Why is the plot not useful?
+```{r}
+ggplot(data = diamonds, aes(x = cut, y = clarity)) +
+  geom_point()
+```
+It doesn't say much. The data is categorical and the plot is treating it as continuous.
+
+
+## Part III: Aesthetic Mappings
+
+Aesthetic mappings translate
+
+### A) Color
+
+#### Color Gradient for Ordinal Data
+```{r}
+# If using a categorical variable each category will have a color
+ggplot(data = diamonds, aes(x = carat, y = price, color = cut)) + geom_point()
+```
+
+#### Unique colors for Nominal Data
+```{r}
+# if not ordered..
+ggplot(data = diamonds, aes(x = carat, y = price, color = as.character(clarity))
+) + geom_point()
+```
+
+#### Saturation Gradient for Numeric
+```{r}
+# If using a numeric variable there will be a color gradient
+ggplot(data = diamonds, aes(x = carat, y = price, color = depth)) + geom_point()
+```
+
+You can also apply a single color to all the data points by specifying the `color` outside of the aesthetic mapping.
+
+```{r}
+ggplot(data = diamonds, aes(x = carat, y = price, color = "orange")) +
+  geom_point()
+```
+
+### B) Transparency
+Great for show overlapping points
+
+```{r}
+ggplot(data = diamonds, aes(x = carat, y = price)) +
+  geom_point(alpha = .4)
+```
+
+
+### C) Shape
+Only useful for categorical variables if you have a small number of categories
+```{r}
+ggplot(data = diamonds, aes(x = carat, y = price, shape = cut)) +
+  geom_point()
+```
+
+
+### D) Size
+Should be mapped to a numeric variable
+```{r}
+ggplot(data = diamonds, aes(x = carat, y = price, size = depth)) +
+  geom_point()
+```
+
+
+### It's Your Turn! Learning by doing
+
+1. What’s gone wrong with this code? Why are the points not blue?
+The color is not being mapped to the variable correctly. The color should specify the color parameter outside the aes() function.
+
+```{r}
+ggplot(diamonds, aes(x = carat, y = price, size = depth, shape = cut, color = as.character(clarity))) +
+  geom_point(color = "blue")
+```
+
+2. Map a continuous variable to color, size, and shape. How do these aesthetics behave differently for categorical vs. continuous variables?
+The aesthetics
+
+
+```{r}
+ggplot(diamonds, aes(x = carat, y = price, size = depth, shape = cut, color = as.character(clarity))) +
+  geom_point()
+```
+
+3. What happens if you map the same variable to multiple aesthetics?
+```{r}
+ggplot(data = diamonds, aes(x = carat, y = price, shape = clarity, color = clarity)) + geom_point()
+```
+
+4. What happens if you map an aesthetic to something other than a variable name, like `aes(colour = carat < 3)`? Note, you’ll also need to specify x and y.
+```{r}
+ggplot(data = diamonds, aes(x = carat, y = price, color = carat < 3)) +
+  geom_point()
+```
+
+## Part IV: Facets
+
+Sometimes it's useful to look at subgroups within our data.  We can do this with facets.
+
+### `facet_wrap()`
+
+You can specify a single discrete variable to facet by and R organize plots to fill the space.
+
+```{r}
+## INSERT YOUR CODE HERE ##
+```
+
+### `facet_grid()`
+
+You can also create a grid of graphs.  The first argument to the function specifies rows and the second columns.
+
+```{r}
+## Grid
+## INSERT YOUR CODE HERE ##
+```
+
+If you prefer to not facet in the rows or columns dimension, use a . instead of a variable name, e.g. `+ facet_grid(. ~ color)`.
+
+### It's Your Turn! Learning by doing
+
+1. What happens if you facet on a continuous variable?
+
+2. What plots does the following code make? What does `.` do?
+
+```{r eval=FALSE}
+ggplot(diamonds, aes(carat, price))+
+  geom_point()+
+  facet_grid(color~.)
+
+ggplot(diamonds, aes(carat, price))+
+  geom_point()+
+  facet_grid(.~cut)
+```
+
+3. When using `facet_grid()` you should usually put the variable with more unique levels in the columns. Why?

@@ -1,0 +1,111 @@
+---
+title: 'Data Viz: Recreating Shot Plot'
+author: "INSERT NAME"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Los Angeles Lakers Shooting Heatmap
+
+In this exercise we will recreate a graphic that describes positions on the basketball court the average points scored from that position and the frequency at which shot are taken from this position.
+
+### The Data
+
+These data represent the LA Lakers 2009/2010 season and come from http://www.basketballgeek.com.  We are going to access this data from my github.
+```{r}
+shots_sum <- read.csv("https://raw.githubusercontent.com/kitadasmalley/DATA502/main/FALL2021/Data/shots_sum.csv",
+                      header = TRUE)
+head(shots_sum)
+
+```
+
+## Step 1: Start with a simple scatterplot
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+
+# Step 1 : Scatterplot
+ggplot(shots_sum, aes(x, y)) + geom_point()
+```
+
+## Step 2: Add color
+```{r}
+# Step 2: Add color
+ggplot(shots_sum, aes(x, y)) + geom_point(aes(color = avg_points))
+```
+
+## Step 3: Size the bubbles
+```{r}
+# Step 3: Size bubbles
+ggplot(shots_sum, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots))
+```
+
+#### What is going on with the big dot in the center?
+
+Its messing up the sizing!
+
+Let's explore:
+```{r}
+subset(shots_sum, num_shots > 3000)
+```
+
+## Step 4: Remove point and re-plot
+```{r}
+# Step 4: Subset the data to remove the "outlier"
+# shots_sub <- subset(shots_sum, num_shots > 3000)
+# dim(shots_sub)
+
+# this can also be done with filer
+shots_sub <- shots_sum %>% filter(num_shots <= 3000)
+dim(shots_sub)
+
+# graph again
+ggplot(shots_sub, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots))
+```
+
+## Step 5: Change limits to focus within the 3 point boundary
+```{r}
+ggplot(shots_sub, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots)) + ylim(0, 35)
+```
+
+## Step 6: X and Y distance should be in same distance
+```{r}
+# Step 6: x and y distance should be in same distance
+ggplot(shots_sub, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots)) + ylim(0, 35) + coord_equal()
+```
+
+## Step 7: Change color from green to red
+```{r}
+# Step 7: Change color from green to red
+ggplot(shots_sub, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots)) +
+    scale_color_distiller(palette = "RdYlGn") +
+  ylim(0, 35) + coord_equal()
+```
+
+## Step 8: Change size scale
+```{r}
+# Step 8: Change size scale
+ggplot(shots_sub, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots)) +
+  scale_color_distiller(palette = "RdYlGn") +
+  scale_size(trans = "sqrt", range = c(0.1, 5)) +
+  ylim(0, 35) +
+  coord_equal()
+```
+
+## Step 9: Polishing
+```{r}
+# Step 9: Polishing
+ggplot(shots_sub, aes(x, y, color = avg_points, size = num_shots)) +
+  geom_point() +
+  scale_color_distiller("Points", palette = "RdYlGn") +
+  scale_size(trans = "sqrt", range = c(0.1, 5)) +
+  ylim(0, 35) +
+  coord_equal() +
+  theme_classic() +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank())
+```
