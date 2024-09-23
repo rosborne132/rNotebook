@@ -14,5 +14,7 @@ Some of the notebooks may require specific R packages. For example, the `ggplot2
 install.packages("ggplot2")
 install.packages("jsonlite")
 ```
+
 ### Running the Notebooks
+
 You can open and run the .rmd files in RStudio. Simply open the file and click the "Knit" button to generate the output document.
