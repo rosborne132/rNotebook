@@ -1,0 +1,51 @@
+---
+title: 'Voter Registration Activity'
+author: "Rob Osborne"
+output: html_document
+---
+
+```{r warning = FALSE, message = FALSE}
+library(tidyverse)
+```
+
+```{r warning = FALSE, message = FALSE}
+# Import data
+vreg <- read.csv("https://raw.githubusercontent.com/fivethirtyeight/data/master/voter-registration/new-voter-registrations.csv", header = TRUE)
+```
+
+### Step 1, Relevel the data so that its in the right order:
+```{r warning = FALSE, message = FALSE}
+vreg$Month <- factor(vreg$Month, levels = c("Jan", "Feb", "Mar", "Apr", "May"))
+```
+
+### Step 2, Tidy the data:
+```{r warning = FALSE, message = FALSE}
+### USE spread() FROM tidyr
+vregYear <- vreg %>%
+  spread(Year, New.registered.voters)
+
+head(vregYear)
+
+### RENAME THE COLUMNS
+# You have to do this because you can't use numbers for column names
+colnames(vregYear) <- c("Jurisdiction", "Month", "Y2016", "Y2020")
+```
+
+### Step 3, Mutate to add the change:
+```{r warning = FALSE, message = FALSE}
+vregChange <- vregYear %>%
+  mutate(change = Y2020 - Y2016)
+```
+
+### Step 4, Recreate the graphic:
+```{r warning = FALSE, message = FALSE}
+# ggplot(vregChange, aes(x = Month, y = change, fill = Jurisdiction)) +
+#   geom_bar(stat = "identity", position = "dodge") +
+#   labs(title = "Change in Voter Registration by Month",
+#        x = "Month",
+#        y = "Change in Voter Registration") +
+#   theme_minimal()
+
+ggplot(vregChange, aes(x = Month, y = change, fill = Jurisdiction)) +
+  geom_col()
+```

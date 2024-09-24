@@ -1,0 +1,183 @@
+---
+title: 'Data Viz: Introduction to ggplot2'
+author: "INSERT NAME HERE"
+output:
+  html_document:
+    toc: true
+    collapsed: false
+    toc_float: true
+    toc_depth: 5
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Part I: Review `geom_point`
+
+### 0. Basics
+
+Recall our work from last class with using `geom_point`:
+
+#### Load example data
+```{r warning = FALSE, message = FALSE}
+library(tidyverse)
+data("diamonds")
+str(diamonds)
+```
+
+#### Starting with a simple scatterplot:
+
+```{r}
+ggplot(diamonds, aes(carat, price)) +
+  geom_point()
+```
+
+### 1. Aesthetic Mapping
+
+#### A. Color
+
+##### Categorical vs Continuous Data
+```{r}
+# If using a categorical variable each category will have a color
+ggplot(diamonds, aes(carat, price, color = clarity)) +
+  geom_point()
+
+# if not ordered..
+ggplot(diamonds, aes(carat, price, color = as.character(clarity))) +
+  geom_point()
+
+# If using a numeric variable there will be a color gradient
+ggplot(diamonds, aes(carat, price, color = depth)) +
+  geom_point()
+```
+
+##### CAUTION
+
+Be careful of where you place the color statement
+```{r}
+ggplot(diamonds, aes(carat, price, color = "blue")) +
+  geom_point()
+
+ggplot(diamonds, aes(carat, price)) +
+  geom_point(color = "blue")
+```
+
+#### B. Transparency
+```{r}
+ggplot(diamonds, aes(carat, price, alpha = clarity)) +
+  geom_point()
+```
+
+
+#### C. Shape
+```{r}
+ggplot(diamonds, aes(carat, price, shape = clarity)) +
+  geom_point()
+```
+
+
+#### D. Size
+```{r}
+ggplot(diamonds, aes(carat, price, size = clarity)) +
+  geom_point()
+```
+
+### 2. Facet
+
+Use facets to explore subsets
+```{r}
+ggplot(diamonds, aes(carat, price)) +
+  geom_point() +
+  facet_grid(. ~ cut)
+#   facet_grid(cut ~ .) # flip the grid. Good for x comparisons
+#   facet_grid(clarity ~ cut) # See comparisons between variables
+#   facet_wrap(~ cut) # wrap the grid
+```
+
+## Part II: Geometries
+
+### 1. Using a single geometry
+
+#### A. Scatterplot
+We have already constructed scatterplots with `geom_point()` let's take a look at other geometries.
+
+#### B. Smooth
+```{r}
+ggplot(diamonds, aes(carat, price)) +
+  geom_smooth()
+#   geom_smooth(se = FALSE) # remove standard error
+#   geom_smooth(method = "lm") # linear model
+```
+
+#### C. Boxplot
+```{r}
+# Vanilla
+# ggplot(diamonds, aes(carat, price)) +
+#   geom_boxplot()
+
+# Side-by-side
+ggplot(diamonds, aes(y = price, fill = cut)) +
+  geom_boxplot()
+```
+
+#### D. Bar Chart
+```{r}
+ggplot(diamonds, aes(x = cut)) +
+  geom_bar()
+```
+
+#### E. Time Series / Line Plots
+
+Here we will take a quick detour from the diamonds dataset to look at data from IMDB on action movies:
+```{r}
+# install.packages("ggplot2movies")
+library(ggplot2movies)
+data(movies)
+
+movies_yg <- group_by(movies, year, Action)
+movies_sum <- summarise(movies_yg, n_movies = n())
+
+## INSERT YOUR CODE HERE ##
+```
+
+### 2 Using multiple geometries at the same time
+
+#### Point and Smooth
+
+Adding `geom_smooth` on top of your `geom_point` can help you see what relationships/trends may exist between you response and explanatory variables.
+
+```{r}
+# POINT AND SMOOTH
+## INSERT YOUR CODE HERE ##
+```
+
+#### Refining your `geom_smooth`
+
+##### 1. Removing the Standard Error Band
+
+```{r}
+# TURNING OFF SE (STANDARD ERROR BARS) IN GEOM_SMOOTH
+## INSERT YOUR CODE HERE ##
+```
+
+##### 2. Specifying the Model
+
+```{r}
+# CHANGING THE METHOD TO LINEAR MODEL
+## INSERT YOUR CODE HERE ##
+```
+
+##### 3. Using Color to Group
+
+```{r}
+# INCLUDING COLOR AS A GROUPING VARIABLE
+## INSERT YOUR CODE HERE ##
+```
+
+##### 4. Combining all the above!
+
+```{r}
+## INSERT YOUR CODE HERE ##
+```

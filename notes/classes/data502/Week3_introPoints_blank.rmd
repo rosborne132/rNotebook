@@ -4,7 +4,6 @@ author: "Rob Osborne"
 output: html_document
 ---
 
-
 In this lab we will be learning about some basics with `ggplot2`.
 
 ## Part I: Learning about your data

@@ -1,0 +1,203 @@
+---
+title: 'Introduction to ggplot2: Part 2 (Bars)'
+author: "Heather Kitada Smalley"
+output: html_document
+---
+
+### Content Reference:
+
+This lab reference practice problems from *"R for Data Science" - Chapter 3: Data Visualisation* https://r4ds.had.co.nz/data-visualisation.html
+
+#### In this lab we will discuss and apply:
+
+* Position Adjustments (for bars)
+* Geometric Objects
+
+## Example 1: Diamonds
+
+First, call the tidyverse package
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+The `diamonds` dataset is built into the `ggplot2` package.
+
+**Prices of over 50,000 round cut diamonds**
+
+**Description:** A dataset containing the prices and other attributes of almost 54,000 diamonds. The variables are as follows:
+
+```{r}
+?diamonds
+```
+
+### A. Learn About the Data
+
+What kinds of variables are we working with?
+
+```{r}
+# look at the structure of the data
+
+```
+
+
+### B. Basic Bar Graph
+
+Let's start with a basic bar graph.  This is a univariate graphical tool for the relative frequency of categorical data.
+
+```{r}
+ggplot(data = diamonds) +
+  geom_bar(aes(x = cut))
+```
+
+#### 1. Playing with Color vs Fill
+
+##### Color
+```{r}
+ggplot(data = diamonds) +
+  geom_bar(aes(x = cut, color = cut)) # provides a different color for each category
+```
+
+Does the output of the graphic above match what you imagined?  Why or why not?
+
+##### Fill
+
+Now try changing the aesthetic to fill.
+
+```{r}
+ggplot(data = diamonds) +
+  geom_bar(aes(x = cut, fill = cut)) # provides a single color for all categories
+```
+
+Does this match what you were hoping for?
+
+#### 2. Color Palette
+
+What do you notice about this color palette?
+
+*Hint: How is it different than the following example using the `mpg` dataset: *
+
+```{r}
+ggplot(data = mpg) +
+  geom_bar(aes(x = class, fill = class))
+```
+
+
+### C. Position Adjustment
+
+#### 1. Stacked Bar Graphs
+
+By default, when we use a different variable to add color to a bar graph than the frequency variable, R creates a stacked bar graph
+
+```{r}
+ggplot(data = diamonds) +
+  geom_bar(aes(x = cut, fill = clarity))
+```
+
+* When would it be useful to use a graphic like this?
+* When might it not be a good choice?  Why?
+
+#### 2. Filled Bar Graphs
+
+When we are interested in comparing proportions across, we can use the `position="fill"' argument.
+
+```{r}
+ggplot(data = diamonds) +
+  geom_bar(aes(x = cut, fill = clarity), position = "fill")
+```
+
+#### 3. Side-by-side Bar Graphs
+
+When we are interested in comparing counts across groups, we can use the `position="dodge"' argument.
+
+```{r}
+# add position="dodge" to your graph above
+ggplot(data = diamonds) +
+  geom_bar(aes(x = cut, fill = clarity), position = "dodge")
+```
+
+* When would it be useful to use a graphic like this?
+* When might it not be a good choice?  Why?
+
+## Example 2: FiveThiryEight
+
+### A. Read the Article
+
+*"Voter Registrations Are Way, Way Down During the Pandemic"* (Jun 26, 2020) by Kaleigh Rogers and Nathaniel Rakich
+
+https://fivethirtyeight.com/features/voter-registrations-are-way-way-down-during-the-pandemic/
+
+
+### B. Discuss in Small Groups
+
+1. How are graphics used to tell the author’s story?
+
+2. What geometries are used?
+
+### C. The Data
+
+What does the raw data look like?
+
+```{r}
+# Import data
+vreg<-read.csv("https://raw.githubusercontent.com/fivethirtyeight/data/master/voter-registration/new-voter-registrations.csv",
+               header=TRUE)
+
+
+head(vreg)
+
+```
+
+### D. Processing the Data
+
+#### Relevel
+
+Relevel the data so that its in the right order:
+
+```{r}
+# Level the Month variable so that its in the right order (ie not alphabetical)
+vreg$Month<-factor(vreg$Month,
+                   levels=c("Jan", "Feb", "Mar", "Apr", "May"))
+
+```
+
+
+#### Tidy
+
+```{r}
+### USE spread() FROM tidyr
+vregYear<-vreg%>%
+  spread(Year, New.registered.voters)
+
+### RENAME THE COLUMNS
+colnames(vregYear)<-c("Jurisdiction", "Month", "Y2016", "Y2020")
+
+
+```
+
+
+#### Mutate
+
+Add change in registration.
+
+```{r}
+### mutate() FROM dplyr()
+vregChange<-vregYear%>%
+  mutate(change=Y2020-Y2016)
+
+```
+
+
+### E. Recreate the graphic
+
+![](https://fivethirtyeight.com/wp-content/uploads/2020/06/rogers-rakich.VOTER-REGISTRATION.0622.png?w=575)
+
+
+```{r}
+# type code/answer here
+
+```
+
+#### Other hints
+* You can add another column to define color
+* Pay careful attention to the axes, you might want to read the help file for facet_wrap
+
