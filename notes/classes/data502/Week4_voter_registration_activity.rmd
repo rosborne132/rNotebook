@@ -39,13 +39,8 @@ vregChange <- vregYear %>%
 
 ### Step 4, Recreate the graphic:
 ```{r warning = FALSE, message = FALSE}
-# ggplot(vregChange, aes(x = Month, y = change, fill = Jurisdiction)) +
-#   geom_bar(stat = "identity", position = "dodge") +
-#   labs(title = "Change in Voter Registration by Month",
-#        x = "Month",
-#        y = "Change in Voter Registration") +
-#   theme_minimal()
-
-ggplot(vregChange, aes(x = Month, y = change, fill = Jurisdiction)) +
-  geom_col()
+ggplot(vregChange, aes(x = Month, y = change, fill = change > 0)) +
+  geom_col() +
+  facet_wrap(Jurisdiction ~ ., scales = "free_y") +
+  theme_bw()
 ```
