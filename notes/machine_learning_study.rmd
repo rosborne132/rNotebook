@@ -1,0 +1,131 @@
+---
+title: "Machine Learning Study"
+author: "Rob Osborne"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Install Required Packages
+
+In this section, we're installing essential packages for machine learning, data visualization, and model interpretation.
+
+- `caret`: This is a comprehensive package for training machine learning models in R.
+- `e1071`: Provides implementations of support vector machines (SVMs) used by `caret`.
+- `ggplot2`: A popular data visualization package.
+- `rpart.plot`: Useful for visualizing decision trees, which is a type of machine learning model.
+
+```{r setup, include = FALSE}
+install.packages("caret")  # For machine learning
+install.packages("e1071")  # For SVM (support vector machines), used by caret
+install.packages("ggplot2")  # For visualization (optional, but helpful)
+install.packages("rpart.plot")  # For visualizing decision trees
+```
+
+
+## Load Required Packages
+
+Now that the necessary packages are installed, we'll load them to make their functions available in the current R environment.
+
+```{r setup, include = FALSE}
+library(caret)
+library(ggplot2)
+library(rpart.plot)
+```
+
+
+## Load Data
+
+We'll be using the built-in iris dataset. It contains 150 observations, each representing an iris flower. The dataset has 4 features (sepal length, sepal width, petal length, petal width) that describe the flowers and a target label, Species, which indicates the flower's species (Setosa, Versicolor, or Virginica). This dataset is widely used for machine learning tutorials because it is small, clean, and well-structured.
+
+```{r setup, include = FALSE}
+data(iris)
+head(iris)  # Show the first few rows of the dataset
+```
+
+
+## Data Exploration
+
+Before training a machine learning model, it's important to explore the data. This step helps us understand the structure, relationships between variables, and the balance of the target classes.
+
+```{r setup, include = FALSE}
+summary(iris)  # Get summary statistics (mean, min, max, etc.) for each variable
+```
+
+
+## Visualize the Data
+
+Visualizing the data helps uncover patterns that aren't immediately obvious from statistical summaries. Here, we'll create a scatter plot of Sepal.Length vs. Sepal.Width and color the points based on the species of the iris.
+
+```{r setup, include = FALSE}
+ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
+  geom_point() +
+  theme_minimal()
+```
+
+
+## Train/Test Split
+
+A key part of building machine learning models is splitting the data into training and test sets. This allows us to train the model on one portion of the data and evaluate it on another, which helps prevent overfitting.
+
+We use createDataPartition() from the caret package to ensure that the species are evenly distributed between the training and test sets.
+- p = 0.8: 80% of the data will be used for training.
+- The remaining 20% will be used for testing.
+
+```{r setup, include = FALSE}
+set.seed(123)  # Setting a random seed ensures reproducibility of the results
+train_index <- createDataPartition(iris$Species, p = 0.8, list = FALSE)
+train_data <- iris[train_index, ]  # Training set
+test_data <- iris[-train_index, ]  # Testing set
+
+```
+
+## Model Training
+
+We'll use a decision tree algorithm to train the model. A decision tree is a simple yet powerful classification model that makes predictions by asking a series of yes/no questions about the features.
+
+The train() function from caret automatically handles much of the process, including cross-validation, making it easier to train models.
+- Species ~ .: This formula tells R to predict Species using all other variables (~ .).
+- method = "rpart": This specifies that we're using a decision tree (rpart) algorithm.
+
+```{r setup, include = FALSE}
+# Train a decision tree model
+model <- train(Species ~ ., data = train_data, method = "rpart")
+
+# Print model summary to check the trained model details
+print(model)
+```
+
+
+## Make Predictions
+
+Now that the model is trained, we use it to make predictions on the test data. The predict() function will return the predicted species for each observation in the test set.
+
+```{r setup, include = FALSE}
+predictions <- predict(model, newdata = test_data)
+```
+
+
+## Evaluate Model Performance
+
+After making predictions, we need to assess how well the model performs. A confusion matrix provides insight into the model's performance by showing how many correct and incorrect predictions were made for each class.
+
+We also calculate the accuracy of the model, which is the proportion of correct predictions out of the total predictions.
+
+```{r setup, include = FALSE}
+# Create a confusion matrix
+confusion_matrix <- table(predictions, test_data$Species)
+
+# Calculate accuracy: the proportion of correct predictions
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+accuracy  # Print the accuracy
+
+```
+
+
+## Visualize the Decision Tree
+
+To gain further insights into how the decision tree makes predictions, we can visualize it using the rpart.plot package. The plot shows the decision-making process, with each internal node representing a question about a feature and each leaf representing a final classification.
+
+```{r setup, include = FALSE}
+rpart.plot(model$finalModel)  # Plot the decision tree
+```
