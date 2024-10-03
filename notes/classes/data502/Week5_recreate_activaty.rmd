@@ -1,0 +1,142 @@
+---
+title: "Replicating Plots Activity"
+output: html_document
+---
+
+### Worked with Levin and L. Ann
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Task
+
+Pick one of the following graphics to replicate in ggplot2. Then once replicated, produce one alternative graphic of the same data, also using ggplot2. Your alternative doesn’t have to “better” (in any sense), but just a different way of visually representing the same data.
+
+Your replication doesn’t have to be an exact reproduction: you should have the right type of plot, and the right aesthetics mapped to the right variables, but you don’t need to have the same color palettes, annotations, or the fonts and background etc.
+
+#### Submit:
+
+an R Markdown file (.Rmd) that creates both the replicated plot and alternative plot
+
+## Options for Replication (pick one)
+
+### Option 1: Language Spoken in LA Homes
+
+From: https://www.latimes.com/la-me-libraries-languages-diversity-2019-story.html
+
+Get the data here
+
+```{r warnings=FALSE, message=FALSE}
+library(tidyverse)
+
+langs<-read_csv("https://raw.githubusercontent.com/datadesk/la-county-language-analysis/master/los-angeles-county-languages.csv") %>%
+filter(language %in% c("English", "Spanish"))
+
+#head(langs)
+```
+### Option 2: Board Games
+
+From: https://fivethirtyeight.com/features/designing-the-best-board-game-on-the-planet/
+
+Get the data here
+
+```{r warnings=FALSE, message=FALSE}
+library(tidyverse)
+
+board_games<-readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-12/board_games.csv")
+
+#str(board_games)
+```
+
+### Option 3: Wildfires in California
+
+From: https://www.buzzfeednews.com/article/peteraldhous/california-wildfires-people-climate
+
+Get the data:
+
+```{r warnings=FALSE, message=FALSE}
+library(tidyverse)
+
+wildfires<-readr::read_csv("https://raw.githubusercontent.com/BuzzFeedNews/2018-07-wildfire-trends/master/data/calfire_frap.csv") %>%
+  mutate(plot_date = as.Date(format(alarm_date,"2017-%m-%d")))
+
+str(wildfires)
+```
+
+```{r warnings=FALSE, message=FALSE}
+
+ca_fires <- wildfires %>%
+  filter(state == "CA")
+
+ggplot(ca_fires, aes(x = plot_date, y = year_, size = gis_acres)) +
+  geom_point(alpha = 0.5, color = "orange") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b") +
+  scale_x_continuous(breaks = NULL) +
+  scale_y_reverse(
+      breaks = c(1950, 1970, 1990, 2010),
+      labels = c(1950, 1970, 1990, 2010)) +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "black"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_line(color = "lightgrey"),
+    legend.position = "none",
+    text = element_text(color = "white"),
+    axis.text.x = element_text(color = "white"),
+    axis.text.y = element_text(color = "white")
+  )
+```
+
+### Option 4: Foul Balls
+
+From: https://fivethirtyeight.com/features/we-watched-906-foul-balls-to-find-out-where-the-most-dangerous-ones-land/
+
+Get the data:
+
+```{r warnings=FALSE, message=FALSE}
+library(tidyverse)
+
+foul_balls<-readr::read_csv("https://raw.githubusercontent.com/fivethirtyeight/data/master/foul-balls/foul-balls.csv") %>%
+mutate(velocity_mag = if_else(exit_velocity < 90, "< 90 mph", "> 90 mph",
+                              missing = "Unknown"))
+
+#str(foul_balls)
+```
+
+### Option 5: NYC Regents Exam
+
+From: https://www.nytimes.com/2011/02/19/nyregion/19schools.html
+
+Get the data:
+
+```{r warnings=FALSE, message=FALSE}
+# install.packages("dslabs")
+library(dslabs)
+library(tidyverse)
+
+exam_scores <- nyc_regents_scores %>%
+  mutate(total = rowSums(nyc_regents_scores[,-1], na.rm=TRUE)) %>%
+  filter(!is.na(score))
+
+#str(exam_scores)
+```
+### Option 6: Infectious diseases and vaccines
+
+From: http://graphics.wsj.com/infectious-diseases-and-vaccines/?mc_cid=711ddeb86e
+
+Get the data here:
+
+```{r  warnings=FALSE, message=FALSE}
+# install.packages("dslabs")
+
+library(dslabs)
+
+measles <- us_contagious_diseases %>%
+  filter(!state%in%c("Hawaii","Alaska") & disease == "Measles") %>%
+  mutate(rate = count / population * 10000 * 52 / weeks_reporting)
+
+#str(measles)
+```
+
+Reference: Activity modified from Prof Charlotte Wickham

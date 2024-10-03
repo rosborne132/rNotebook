@@ -1,0 +1,89 @@
+---
+title: "DataViz: Alternative to Pie Charts"
+author: "INSERT NAME HERE"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Commuting Data
+
+The following data show commuting transportation methods for states on the West Coast of the United States.
+
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+
+#rds is an special r dataframe
+#commute <- readRDS("~/Desktop/DataViz Reading/Week 5 Data and Code/commute.rds")
+
+# csv format
+commute<-read.csv("https://raw.githubusercontent.com/kitadasmalley/Teaching/refs/heads/main/DATA502/FALL2024/Week5/commute.csv", header=TRUE)
+
+# a subset of states for class
+states <- c("or", "ak", "ca", "wa", "id", "nv")
+commute_nw <- filter(commute, state %in% states)
+
+```
+
+## Pie Chart
+
+Pie charts are common, but not great for:
+
+  1) Many categories
+  2) Comparison
+
+```{r}
+ggplot(commute_nw) +
+  geom_bar(aes(x = "", y = prop, fill = factor(transport_type)),
+    stat = "identity", width = 1) +
+  facet_wrap(~ state_name) +
+  coord_polar(theta = "y") +
+  theme_minimal(18) +
+  xlab("") + ylab("") +
+  theme(axis.text = element_blank()) +
+  scale_fill_discrete(name = "Transporation") +
+  labs(title = "People in Oregon commute by bicycle more \nthan in other (nearby) states")
+```
+
+## Activity
+
+### Step 1: Sketch an alternative display of the data that would be an improvement.
+
+  * Graphs should employ perceptual tasks as high on the ranking as possible.
+  * Keep important comparisons close.
+
+### Step 2:  Share your sketch with your group
+
+  * Discuss what you think was most effective and what was not
+  * Choose one idea to implement together in `ggplot2`
+
+
+
+```{r}
+# filter data based on Bicyle
+bicyle_commute_nw <- filter(commute_nw, transport_type == "Bicycle")
+
+ggplot(bicyle_commute_nw) +
+  geom_bar(aes(x = reorder(state_name, -prop), y = prop, fill = state == "or"),
+    stat = "identity", width = 0.7) +
+  theme_minimal() +
+  xlab("State") + ylab("Proportion") +
+  scale_fill_discrete(name = "Transporation") +
+  labs(title = "People in Oregon commute by bicycle more \nthan in other (nearby) states")
+```
+
+```{r echo=FALSE}
+# filter data based on Bicyle
+bicyle_commute_nw <- filter(commute_nw, transport_type == "Bicycle")
+
+ggplot(bicyle_commute_nw) +
+  geom_boxplot(aes(x = state_name, y = prop)) +
+  theme_minimal() +
+  xlab("State") + ylab("Proportion") +
+  scale_fill_discrete(name = "Transportation") +
+  labs(title = "Distribution of Bicycle Commute Proportions by State")
+```
+
+### Step 3:  Share with class and submit
