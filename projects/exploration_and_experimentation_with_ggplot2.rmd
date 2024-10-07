@@ -2,66 +2,56 @@
 title: "Exploration and Experimentation with ggplot2 submission"
 author: "Rob Osborne"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  pdf_document: default
 ---
 
 ## Install Required Packages
-```{r setup, include = FALSE}
-install.packages("ggplot2movies")
-install.packages("ggthemes")
+```{r, warning=FALSE, message=FALSE}
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+
+# Install packages
+if (!requireNamespace("ggplot2movies", quietly = TRUE)) {
+  install.packages("ggplot2movies")
+}
+if (!requireNamespace("ggthemes", quietly = TRUE)) {
+  install.packages("ggthemes")
+}
+if (!requireNamespace("tinytex", quietly = TRUE)) {
+  install.packages("tinytex")
+}
+
+# Install TinyTeX if not already installed
+if (!tinytex::is_tinytex()) {
+  tinytex::install_tinytex()
+}
 ```
 
 
 ## Load Required Packages
-```{r setup, include = FALSE}
+```{r, warning=FALSE, message=FALSE}
 library(ggplot2)
 library(ggplot2movies)
 library(ggthemes)
+library(tinytex)
+library(dplyr)
+library(scales)
 ```
 
 
 ## Load Data
-```{r setup, include = FALSE}
-library(dplyr)
-library(ggplot2)
-library(ggplot2movies)
-library(scales)
-
+```{r, warning=FALSE, message=FALSE}
 data(movies) # Load the dataset
 head(movies) # Preview the dataset
-?movies
+# ?movies
 ```
-
-
-## Notes
-
-- Write down expectations ahead of time
-- Show the data (Keep it simple)
--
-
-
-## Tasks
-
-### Review and submission
-[] Ensure all code chunks are executable.
-[] Knit the R Markdown file to a PDF.
-[] Review the PDF to ensure it meets the assignment requirements.
-[] Submit the PDF.
-
-### How we are graded
-- The focus of this assignment is exploration and experimentation.
-- Concentrate on answering each question in a variety of ways and exploring functionality of ggplot2, rather than making
-“perfect” plots.
-- You will be graded for completeness, exploration and experimentation not the effectiveness of your graphics (see the rubric below).
-    - In particular, for each plot you present in the PDF (please knit your Rmd file as a pdf), I’ll be looking in your code for evidence that you
-made at least one or two other alternative plots.
 
 
 ## Plot 1: Ratings by Genre
 
 #### Data Preparation
-
-```{r setup, include = FALSE}
+```{r, warning=FALSE, message=FALSE}
 # Create a new column 'genre' in the 'movies' data frame.
 # This column categorizes each movie based on its genre.
 movies$genre <- ifelse(movies$Action == 1, "Action",
@@ -71,7 +61,7 @@ movies$genre <- ifelse(movies$Action == 1, "Action",
 
 ### 1st Draft
 
-Limit the plotting by genre to only two genres: Action and Comedy.
+Limit the plotting by genre to only two genres: action and comedy.
 
 ```
 ggplot(movies, aes(x = genre, y = rating)) +
@@ -101,9 +91,9 @@ ggplot(movies, aes(x = genre, y = rating, fill = genre)) +
 
 ### Final Draft
 
-Expand the genres to include Drama and Romance. All genres should include (action, comedy, drama, romance, other)
+Expand the genres. All genres should include (action, animation, comedy, doumentary, drama, romance, short, and other). This plot will show the distribution of ratings for each genre with a dashed line across the x axis for the overall move average rating.
 
-```{r setup, include = FALSE}
+```{r, warning=FALSE, message=FALSE}
 movies$genre <- ifelse(movies$Action == 1, "Action",
 ifelse(movies$Animation == 1, "Animation",
 ifelse(movies$Comedy == 1, "Comedy",
@@ -113,14 +103,18 @@ ifelse(movies$Romance == 1, "Romance",
 ifelse(movies$Short == 1, "Short",
 "Other")))))))
 
-ggplot(movies, aes(x = genre, y = rating)) +
+average_rating <- mean(movies$rating, na.rm = TRUE)
+
+ggplot(movies, aes(x = genre, y = rating, fill = genre)) +
   geom_violin() +
+  geom_hline(yintercept = average_rating, linetype = "dashed", color = "red") +
   labs(
     title = "Ratings by Genre",
     x = "Genre",
     y = "Rating"
   ) +
-  theme_minimal()
+  theme_minimal() +
+  theme(legend.position = "top", panel.grid.major.x = element_blank())
 ```
 
 
@@ -128,14 +122,14 @@ ggplot(movies, aes(x = genre, y = rating)) +
 
 #### Data Preparation
 
-```{r setup, include = FALSE}
+```{r, warning=FALSE, message=FALSE}
 # Remove rows where the 'budget' column has NA values
 movies_clean <- movies[!is.na(movies$budget), ]
 ```
 
 ### 1st Draft
 
-Plot a basic scatter plot of rating vs. budget. This first plot is pretty messy as some values for budget are `NA`
+Plot a basic scatter plot of rating vs. budget. This first plot is pretty messy as most values are plotted on the left side of the graph making it difficult to understand.
 
 ```
 ggplot(movies, aes(x = budget, y = rating)) +
@@ -143,12 +137,13 @@ ggplot(movies, aes(x = budget, y = rating)) +
   labs(title = "Movie Rating vs. Budget",
        x = "Budget",
        y = "Rating") +
-  theme_minimal()
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank())
 ```
 
 ### 2nd Draft
 
-Filter out NA values in the 'budget' column before plotting rating vs. budget. Shifting to a log scale for the x-axis to better visualize the data as before most of the data was plotted on the left of the graph making it difficult to understand.
+Shifting to a log scale for the x-axis to better visualize the data as before most of the data was plotted on the left of the graph making it difficult to understand.
 Using the `scales` package to format the x-axis labels with commas.
 
 ```
@@ -164,24 +159,25 @@ ggplot(movies_clean, aes(x = budget, y = rating)) +
 
 ### Final Draft
 
-For the final draft we are going to use a 2D bin plot to better visualize where most of the data is.
+For the final draft we are going to use a 2D bin plot to better visualize where most of the data is. This will help us understand the distribution of the data better. The data shows that most movies have a budget between $1 - 100 million and a rating between 5 and 7.
 
-```{r setup, include = FALSE}
+```{r, warning=FALSE, message=FALSE}
 ggplot(movies_clean, aes(x = budget, y = rating)) +
   stat_bin_2d() +
   scale_x_log10(labels = comma) +
   labs(title = "Movie Rating vs. Budget (NA Removed)",
        x = "Budget",
        y = "Rating") +
-  theme_classic()
+  theme_classic() +
+  theme(legend.position = "top")
 ```
 
 
 ## Plot 3: Year vs Length
 
 #### Data Preparation
-
-```{r setup, include = FALSE}
+```{r, warning=FALSE, message=FALSE}
+# Store the average movie length per year in a new data frame
 avg_length_per_year <- movies %>%
   group_by(year) %>%
   summarize(avg_length = mean(length, na.rm = TRUE))
@@ -189,7 +185,7 @@ avg_length_per_year <- movies %>%
 
 ### 1st Draft
 
-Plot a bar chart of movie length vs. year. This plot is not very informative as it doesn't show the distribution of movie lengths over the years.
+Plot a bar chart of movie length vs. year.
 
 ```
 ggplot(movies, aes(x = year, y = length)) +
@@ -202,7 +198,7 @@ ggplot(movies, aes(x = year, y = length)) +
 
 ### 2nd Draft
 
-Calculate the average movie length per year and plot it as a bar chart. This will give a better sense of how movie lengths have changed over the years.
+Calculate the average movie length per year and plot it as a bar chart. This will give a better sense of how movie lengths (based on an average) have changed over the years.
 
 ```
 ggplot(avg_length_per_year, aes(x = year, y = avg_length)) +
@@ -210,17 +206,18 @@ ggplot(avg_length_per_year, aes(x = year, y = avg_length)) +
   labs(title = "Average Movie Length vs. Year",
        x = "Year",
        y = "Average Length") +
-  theme_minimal()
+  theme_minimal() +
+  theme(panel.grid.major.x = element_blank())
 ```
 
 ### Final Draft
 
-Calculate the average movie length per year and plot it as a line chart with a smoothed line to show the trend more clearly.
+Calculate the average movie length per year and plot it as a line chart with a smoothed line to show the trend more clearly. The trend shows us that the average movie length have been increasing from 1890 to 1980. This is likely due to the advancement of filming technology.
 
-```{r setup, include = FALSE}
+```{r, warning=FALSE, message=FALSE}
 ggplot(avg_length_per_year, aes(x = year, y = avg_length)) +
   geom_point(alpha = 0.5) +
-  geom_smooth() +
+  geom_smooth(se = FALSE) +
   labs(title = "Average Movie Length vs. Year",
        x = "Year",
        y = "Average Length") +
@@ -231,8 +228,7 @@ ggplot(avg_length_per_year, aes(x = year, y = avg_length)) +
 ## Plot 4: Genre Popularity Over Time
 
 #### Data Preparation
-
-```{r setup, include = FALSE}
+```{r, warning=FALSE, message=FALSE}
 # Create a new column 'genre' in the 'movies' data frame.
 # This column categorizes each movie based on its genre.
 movies$genre <- ifelse(movies$Action == 1, "Action",
@@ -254,7 +250,7 @@ genre_counts <- movies %>%
 
 Calculate the number of movies per genre per year and plot the number of movies per genre over time.
 
-```{r setup, include = FALSE}
+```
 ggplot(genre_counts, aes(x = year, y = count, color = genre)) +
   geom_bar(stat = "identity") +
   labs(title = "Genre Popularity Over Time",
@@ -279,9 +275,9 @@ ggplot(genre_counts, aes(x = year, y = count, fill = genre)) +
 
 ### Final Draft
 
-Calculate the number of movies per genre per year and plot the number of movies per genre over time.
+Calculate the number of movies per genre per year and plot the number of movies per genre over time. This plot shows us that between years 1980 and 2010 there was an increase in popularity for comedy movies.
 
-```{r setup, include = FALSE}
+```{r, warning=FALSE, message=FALSE}
 ggplot(genre_counts, aes(x = year, y = count, color = genre)) +
   geom_line(size = 1) +
   labs(title = "Genre Popularity Over Time",
