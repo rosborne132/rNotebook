@@ -33,13 +33,15 @@ ggplot(shots_sum, aes(x, y)) + geom_point()
 ## Step 2: Add color
 ```{r}
 # Step 2: Add color
-ggplot(shots_sum, aes(x, y)) + geom_point(aes(color = avg_points))
+ggplot(shots_sum, aes(x, y)) +
+  geom_point(aes(color = avg_points))
 ```
 
 ## Step 3: Size the bubbles
 ```{r}
 # Step 3: Size bubbles
-ggplot(shots_sum, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots))
+ggplot(shots_sum, aes(x, y)) +
+  geom_point(aes(color = avg_points, size = num_shots))
 ```
 
 #### What is going on with the big dot in the center?
@@ -62,32 +64,41 @@ shots_sub <- shots_sum %>% filter(num_shots <= 3000)
 dim(shots_sub)
 
 # graph again
-ggplot(shots_sub, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots))
+ggplot(shots_sub, aes(x, y)) +
+  geom_point(aes(color = avg_points, size = num_shots))
 ```
 
 ## Step 5: Change limits to focus within the 3 point boundary
 ```{r}
-ggplot(shots_sub, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots)) + ylim(0, 35)
+ggplot(shots_sub, aes(x, y)) +
+  geom_point(aes(color = avg_points, size = num_shots)) +
+  ylim(0, 35)
 ```
 
 ## Step 6: X and Y distance should be in same distance
 ```{r}
 # Step 6: x and y distance should be in same distance
-ggplot(shots_sub, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots)) + ylim(0, 35) + coord_equal()
+ggplot(shots_sub, aes(x, y)) +
+  geom_point(aes(color = avg_points, size = num_shots)) +
+  ylim(0, 35) +
+  coord_equal()
 ```
 
 ## Step 7: Change color from green to red
 ```{r}
 # Step 7: Change color from green to red
-ggplot(shots_sub, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots)) +
-    scale_color_distiller(palette = "RdYlGn") +
-  ylim(0, 35) + coord_equal()
+ggplot(shots_sub, aes(x, y)) +
+  geom_point(aes(color = avg_points, size = num_shots)) +
+  scale_color_distiller(palette = "RdYlGn") +
+  ylim(0, 35) +
+  coord_equal()
 ```
 
 ## Step 8: Change size scale
 ```{r}
 # Step 8: Change size scale
-ggplot(shots_sub, aes(x, y)) + geom_point(aes(color = avg_points, size = num_shots)) +
+ggplot(shots_sub, aes(x, y)) +
+  geom_point(aes(color = avg_points, size = num_shots)) +
   scale_color_distiller(palette = "RdYlGn") +
   scale_size(trans = "sqrt", range = c(0.1, 5)) +
   ylim(0, 35) +
