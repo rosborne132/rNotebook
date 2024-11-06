@@ -1,0 +1,85 @@
+---
+title: 'DataViz: Dynamic Visualization with Gapminder'
+author: "Heather Kitada Smalley"
+
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Motivating Example: Gapminder
+#### Fertility vs Life Expectancy
+
+In this demo we are going to learn about dynamic graphics by using the Gapminder data on Fertility.  These data are discussed in the Hans Rosling TED Talk (start at 2:30) <https://youtu.be/hVimVzgtD6w?t=149>.
+
+For more detail on how the data were wrangled please look at the article "How to build Animated Charts like Hans Rosling — doing it all in R" by Tristan Ganry <https://towardsdatascience.com/how-to-build-animated-charts-like-hans-rosling-doing-it-all-in-r-570efc6ba382>.
+
+### 1) Start Simple: `ggplot`
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+
+fert <- read_csv("https://raw.githubusercontent.com/kitadasmalley/FA2020_DataViz/main/data/gapminderFert.csv")
+
+head(fert)
+
+p <- fert %>%
+  filter(year == 2015) %>%
+  ggplot(aes(x = fert, y = life, size = pop, color = continent)) +
+  labs(x = "Fertility Rate", y = "Life expectancy at birth (years)",
+       caption = "(Based on data from Hans Rosling - gapminder.com)",
+       color = 'Continent',size = "Population (millions)") +
+  ylim(30,100) +
+  geom_point()
+
+p
+```
+
+### 2) Add some interaction: `plotly`
+
+The `plotly` package can be used to created interactive graphics.  Although it is an entirely different paradigm of programming graphics, it does have a very nice function, `ggplotly` that can be added on to ggplot objects.
+
+#### Use the `tooltip` to learn more about each point
+
+```{r message=FALSE, warning=FALSE}
+#install.packages("plotly")
+library(plotly)
+
+p <- fert %>%
+  ggplot(aes(x = fert, y = life, size = pop, color = continent, frame = year)) +
+  labs(x = "Fertility Rate", y = "Life expectancy at birth (years)",
+       caption = "(Based on data from Hans Rosling - gapminder.com)",
+       color = 'Continent', size = "Population (millions)") +
+  ylim(30,100) +
+  geom_point()
+
+ggplotly(p)
+```
+
+### 3) Now let's animate! `gganimate`
+```{r message=FALSE, warning=FALSE}
+#install.packages("gganimate")
+library(gganimate)
+#install.packages("gifski")
+library(gifski)
+
+p1 <- fert %>%
+  ggplot(aes(x = fert, y = life, size = pop, color = continent, frame = year)) +
+  labs(x = "Fertility Rate", y = "Life expectancy at birth (years)",
+       caption = "(Based on data from Hans Rosling - gapminder.com)",
+       color = 'Continent', size = "Population (millions)") +
+  ylim(30,100) +
+  geom_point() +
+  ggtitle("Year: {round(frame_time, 0)}") +
+  transition_time(year) +
+  ease_aes("linear") +
+  enter_fade() +
+  exit_fade()
+
+animate(p1, fps = 4, width = 600, height = 400, renderer = gifski_renderer())
+anim_save("output.gif")
+```
+
+Notice that this animation is a little choppy, because there is one observation every year.  You can use the `tweener` package to interpolate and make smoother transitions <https://www.r-bloggers.com/2017/05/create-smooth-animations-in-r-with-the-tweenr-package/>.

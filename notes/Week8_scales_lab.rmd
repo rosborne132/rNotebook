@@ -1,0 +1,185 @@
+---
+title: 'DataViz: Scales Lab'
+author: "INSERT NAME HERE"
+output: html_document
+---
+
+*Adapted from a lab written by Prof Charlotte Wickham*
+
+# LAB DIRECTIONS:
+
+## Exploring flight delays
+To experiment with some features of scales we are going to work with a heatmap of the proportion of flights that have a departure delay of more that 15 minutes (`prop_over_15`) at the George Bush Intercontinental Airport (IAH) by day of the week (`DayOfWeek`) and departure hour (`DepHour`).
+
+### Step 1: Get the data
+These data come from the `hflights` package, but some summarization is done for you.
+
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+iah <- read_csv("https://raw.githubusercontent.com/kitadasmalley/Teaching/main/DATA502/FA2023/R_Markdown/Week8/iah_flightSummary.csv")
+
+str(iah)
+```
+
+### Step 2: Make a heatmap:
+
+```{r}
+# make sure days of week are displayed in the right order
+iah$DayOfWeek <- factor(iah$DayOfWeek,
+  levels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
+
+p <- ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15))
+
+p
+```
+
+### Step 3: Experiment with `scale_fill_xxx`
+
+We are interested in changing the scale for the fill of the tiles so we should be adding a `scale_fill_xxx function`, where `xxx` is replaced by a scale name. (If you are working with points and have mapped color to a variable, you would use `scale_color_xxx`.) When the fill aesthetic is mapped to a continuous variable, the default is `scale_fill_gradient`.
+
+##### Verify that adding this explicitly to the plot doesn’t change anything:
+
+```{r}
+p + scale_fill_gradient2()
+```
+
+##### Change end point colors:
+
+We can change the colors at the endpoints of the scale by specifying the `high` and `low` arguments, for example,
+
+```{r}
+p + scale_fill_gradient("Proportion", high = "white", low = "springgreen4")
+```
+
+#### **Experiment!**
+
+Use different named colors for high and low arguments to scale_fill_gradient. You can see a list of the named colors with `colors()`, or a useful .pdf is at: <http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf>
+
+### Step 4: Find better color scales
+
+It’s surprisingly hard using scale_fill_gradient to find “nice” color gradients, and there is no guarantee they’ll correspond to any perceptually sound palettes like those you’ve seen in the readings.
+
+```{r}
+# install.packages("colorspace")
+library(colorspace)
+```
+
+colorspace has a whole set of named palettes, you can see them all with:
+
+```{r}
+hcl_palettes(plot = TRUE)
+```
+
+Notice they are broken into sections for qualitative, sequential and diverging palettes.
+
+To apply a colorspace palette to a ggplot2 plot, you use the a function that takes the form:
+
+```{}
+scale_<aesthetic>_<datatype>_<colorscale>()
+```
+
+Where `<datatype>` is one of `discrete` or `continuous`, and `<colorscale>` is one of `qualitative`, `sequential`, or `diverging`, and you’ll pass the palette name as the argument.
+
+So, for instance to add the `"Mint"` palette, you could use:
+
+```{r}
+p + scale_fill_continuous_qualitative("Cold")
+```
+
+
+I’ve used `fill` because our original plot mapped `prop_over_15` to `fill`, `continuous` because `prop_over_15` is continuous, and `sequential` because `"Mint"` is a sequential scale.
+
+#### **Experiment!**
+
+Try 3-4 other colorspace sequential scales.
+
+```{r}
+### EXPERIMENT HERE ###
+# p + scale_fill_binned_sequential("Mint")
+# p + scale_fill_binned_sequential("PinkYl")
+# p + scale_fill_continuous_sequential("Plasma")
+# p + scale_fill_binned_sequential("ag_Sunset")
+```
+
+
+You could use a diverging scale, but since colorspace assumes zero is the midpoint you’ll only get one half of the palette:
+
+```{r}
+p +  scale_fill_continuous_diverging("Blue-Red")
+```
+
+### Step 5: Transform data and change limits
+
+Let’s look at the average departure delay of delayed flights
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = avg_delay_delayed)) +
+  scale_fill_gradient()
+
+```
+
+*Why is this plot so uninformative?*
+
+Try limiting the fill scale to only show values between 0 and 120:
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = avg_delay_delayed)) +
+  scale_fill_gradient(limits = c(0, 120))
+```
+
+Instead of using `limits` try using `trans = "log10"`. **What happens?**
+
+Compare that to mapping fill to the log transformed average delay of delayed flights:
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = log10(avg_delay_delayed))) +
+  scale_fill_gradient()
+```
+
+Other transformations are listed in the “See Also” section of `?trans_new`.
+
+An alternative approach to deal with a few very large numbers is to turn the continuous variable into a discrete one by binning it:
+
+```{r}
+iah <- iah %>%
+  mutate(avg_delay_cut = cut(avg_delay, breaks = c(-5, 0, 15, 30, 60, 1000)))
+```
+
+Then you’ll need to use the discrete form of the scale:
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = avg_delay_cut))  +
+  scale_fill_discrete_sequential("Plasma")
+```
+
+#### **Experiment!**
+
+1. Try adding a different discrete sequential color palette.
+1. Try adding a discrete qualitative scale. Is the one you tried useful for this variable?
+1. What happens if you add a discrete diverging scale? Why isn’t this useful in this example?
+
+```{r}
+### SPACE TO EXPERIMENT ###
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = avg_delay_cut))  +
+  scale_fill_discrete_sequential("Mint")
+```
+
+
+### Step 6: Simulating color vision deficiency
+
+Experiment Save one of your plots so far as a PNG file, upload it at <http://hclwizard.org/cvdemulator/>. and click on the “All” tab to see it as it may appear to someone with each of the different color vision deficiencies. **Are the colors still distinguishable?**
+
+### More information on Guides
+
+Guides control how legends appear. Take a look at <http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/>
+
+and the examples at <https://ggplot2.tidyverse.org/reference/guide_colourbar.html>
+
+and <https://ggplot2.tidyverse.org/reference/guide_legend.html>
+
+to see what can be changed.

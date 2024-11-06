@@ -1,0 +1,252 @@
+---
+title: 'DataViz: Polishing'
+author: "INSERT NAME HERE"
+
+output: html_document
+---
+*Adapted from a lab written by Prof Charlotte Wickham*
+
+
+
+### The data
+These data come from the `hflights` package, but some summarization is done for you.
+
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+library(colorspace)
+iah <- read.csv("https://raw.githubusercontent.com/kitadasmalley/Teaching/main/DATA502/FA2023/R_Markdown/Week8/iah_flightSummary.csv")
+
+str(iah)
+```
+
+### Start with this heatmap:
+
+The heatmap represents the proportion of flights that have a departure delay of more that 15 minutes (`prop_over_15`) at the George Bush Intercontinental Airport (IAH) by day of the week (`DayOfWeek`) and departure hour (`DepHour`).
+
+```{r}
+# make sure days of week are displayed in the right order
+iah$DayOfWeek <- factor(iah$DayOfWeek,
+  levels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
+
+p <- ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15))
+
+p
+```
+
+### Step 1 : `scale_x_continuous`
+
+#### Breaks
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time", breaks = c(0, 6, 12, 18, 24))
+```
+
+#### Labels
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time",
+    breaks = c(0, 6, 12, 18, 24),
+    labels = c("midnight", "6am", "noon", "6pm", "midnight"))
+```
+#### Limits
+
+0 and midnight are the same thing!
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time",
+    breaks = c(0, 6, 12, 18, 24),
+    labels = c("midnight", "6am", "noon", "6pm", "midnight"),
+    limits = c(0, 23))
+```
+
+#### Expansion (Padding Space)
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time",
+    breaks = c(0, 6, 12, 18, 24),
+    labels = c("midnight", "6am", "noon", "6pm", "midnight"),
+    expand = c(0, 0),
+    limits = c(0, 23))
+```
+
+
+
+### Step 2: `scale_y_discrete`
+
+#### Label
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time",
+    breaks = c(0, 6, 12, 18, 24),
+    labels = c("midnight", "6am", "noon", "6pm", "midnight"),
+    expand = c(0, 0),
+    limits = c(0, 23)) +
+  scale_y_discrete("Departure day")
+```
+
+### Step 3:  `scale_fill_continuous_sequential`
+
+We're going to need the color space package for this.
+
+#### Palette
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time",
+    breaks = c(0, 6, 12, 18, 24),
+    labels = c("midnight", "6am", "noon", "6pm", "midnight"),
+    expand = c(0, 0),
+    limits = c(0, 23)) +
+  scale_y_discrete("Departure day") +
+  scale_fill_continuous_sequential(
+    name = "Flights delayed \nmore than 15 mins",
+    palette = "YlOrRd")
+```
+
+#### Breaks
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time",
+    breaks = c(0, 6, 12, 18, 24),
+    labels = c("midnight", "6am", "noon", "6pm", "midnight"),
+    expand = c(0, 0),
+    limits = c(0, 23)) +
+  scale_y_discrete("Departure day") +
+  scale_fill_continuous_sequential(
+    name = "Flights delayed \nmore than 15 mins",
+    palette = "YlOrRd",
+    breaks = c(0, .25, 0.5, .75, 1))
+```
+
+#### Labels
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time",
+    breaks = c(0, 6, 12, 18, 24),
+    labels = c("midnight", "6am", "noon", "6pm", "midnight"),
+    expand = c(0, 0),
+    limits = c(0, 23)) +
+  scale_y_discrete("Departure day") +
+  scale_fill_continuous_sequential(
+    name = "Flights delayed \nmore than 15 mins",
+    palette = "YlOrRd",
+    breaks = c(0, .25, 0.5, .75, 1),
+    labels = c("0%", "25%", "50%", "75%", "100%"))
+```
+
+#### Guide (Legend)
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time",
+    breaks = c(0, 6, 12, 18, 24),
+    labels = c("midnight", "6am", "noon", "6pm", "midnight"),
+    expand = c(0, 0),
+    limits = c(0, 23)) +
+  scale_y_discrete("Departure day") +
+  scale_fill_continuous_sequential(
+    name = "Flights delayed \nmore than 15 mins",
+    palette = "YlOrRd",
+    breaks = c(0, .25, 0.5, .75, 1),
+    labels = c("0%", "25%", "50%", "75%", "100%"),
+    expand = c(0, 0),
+    guide = "colorbar")
+```
+
+### Step 4: Title and subtitle
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time",
+    breaks = c(0, 6, 12, 18, 24),
+    labels = c("midnight", "6am", "noon", "6pm", "midnight"),
+    expand = c(0, 0),
+    limits = c(0, 23)) +
+  scale_y_discrete("Departure day") +
+  scale_fill_continuous_sequential(
+    name = "Flights delayed \nmore than 15 mins",
+    palette = "YlOrRd",
+    breaks = c(0, .25, 0.5, .75, 1),
+    labels = c("0%", "25%", "50%", "75%", "100%"),
+    expand = c(0, 0),
+    guide = "colorbar") +
+  labs(title = "Take an early flight from IAH to avoid delays",
+    subtitle = "Based on all departing flights from George Bush Intercontinental Airport (IAH) in 2011")
+```
+
+
+
+### Step 5: Theme
+
+```{r}
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time",
+    breaks = c(0, 6, 12, 18, 24),
+    labels = c("midnight", "6am", "noon", "6pm", "midnight"),
+    expand = c(0, 0),
+    limits = c(0, 23)) +
+  scale_y_discrete("Departure day") +
+  scale_fill_continuous_sequential(
+    name = "Flights delayed \nmore than 15 mins",
+    palette = "YlOrRd",
+    breaks = c(0, .25, 0.5, .75, 1),
+    labels = c("0%", "25%", "50%", "75%", "100%"),
+    expand = c(0, 0),
+    guide = "colorbar") +
+  labs(title = "Take an early flight from IAH to avoid delays",
+    subtitle = "Based on all departing flights from George Bush Intercontinental Airport (IAH) in 2011") +
+  theme_classic() +
+  theme(axis.ticks.y = element_blank(), axis.line.y = element_blank()) + coord_equal()
+```
+
+
+
+### Step 6: Order Days (Relevel)
+```{r}
+iah$DayOfWeek <- factor(iah$DayOfWeek,
+                        levels = c("Sun", "Sat", "Fri", "Thu", "Wed", "Tue","Mon"))
+
+ggplot(iah, aes(DepHour, DayOfWeek)) +
+  geom_tile(aes(fill = prop_over_15), colour = "grey50") +
+  scale_x_continuous("Departure time",
+    breaks = c(0, 6, 12, 18, 24),
+    labels = c("midnight", "6am", "noon", "6pm", "midnight"),
+    expand = c(0, 0),
+    limits = c(0, 23)) +
+  scale_y_discrete("Departure day") +
+  scale_fill_continuous_sequential(
+    name = "Flights delayed \nmore than 15 mins",
+    palette = "YlOrRd",
+    breaks = c(0, .25, 0.5, .75, 1),
+    labels = c("0%", "25%", "50%", "75%", "100%"),
+    expand = c(0, 0),
+    guide = "colorbar") +
+  labs(title = "Take an early flight from IAH to avoid delays",
+    subtitle = "Based on all departing flights from George Bush Intercontinental Airport (IAH) in 2011") +
+  theme_classic() +
+  theme(axis.ticks.y = element_blank(), axis.line.y = element_blank()) + coord_equal()
+```
+
+
+### Step 7: `ggsave()`
+
+```{r}
+#ggsave("polishedDelays.png", height = 3.5, width = 10)
+```

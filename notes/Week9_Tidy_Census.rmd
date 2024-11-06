@@ -1,0 +1,310 @@
+---
+title: 'DataViz: Map Building Demo with Tidy Census'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+CODE UPDATED FALL 2024 DUE TO PACKAGE UPDATE
+
+### Motivating Example
+
+In this demo we will be looking at factors for housing insecurity and homelessness in Seattle, Washington.
+
+### Step 1: Polygon Maps
+
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+
+#install.packages("maps")
+library(maps)
+
+## SELECT WASHINGTON COUNTRIES Important for the midterm
+wa_counties <- map_data("county", "washington") %>%
+  select(lon = long, lat, group, id = subregion)
+
+head(wa_counties)
+```
+
+Plotting with ggplot
+
+#### PART A: Points
+```{r warning=FALSE, message=FALSE}
+## POINTS
+ggplot(wa_counties, aes(lon, lat)) +
+  geom_point(size = .25, show.legend = FALSE) +
+  coord_quickmap()
+```
+#### LINES OR PATHS?
+
+```{r}
+## LINES
+ggplot(wa_counties, aes(lon, lat)) +
+  geom_line() +
+  coord_quickmap()
+
+## PATH
+# ggplot(wa_counties, aes(lon, lat)) +
+#   geom_path() +
+#   coord_quickmap()
+
+## PATH + GROUP
+# ggplot(wa_counties, aes(lon, lat, group=group)) +
+#   geom_path() +
+#   coord_quickmap()
+```
+
+#### PART B: Polygons
+```{r}
+## POLYGONS
+ggplot(wa_counties, aes(lon, lat, group = group)) +
+  geom_polygon(fill = "white", colour = "grey50") +
+  coord_quickmap()
+```
+
+### Step 2: Simple Features Maps
+
+```{r cache=FALSE, results=FALSE, warning=FALSE, comment=FALSE, warning=FALSE, message=FALSE}
+#install.packages("sf")
+library(sf)
+
+#install.packages("tigris")
+library(tigris)
+options(tigris_use_cache = TRUE)
+
+# set year for boundaries
+this.year = 2017 # the last census
+
+wa_tracts <- tracts(state = 'WA', county = 'King',
+                    cb = T, year = this.year)
+
+head(wa_tracts)
+
+# BASE PLOT
+# plot(wa_tracts)
+
+# GGPLOT
+ggplot(wa_tracts) +
+  geom_sf() +
+  coord_sf()
+```
+
+### Step 3: Layered Maps / Adding Other Geometries
+
+#### PART A: Mapping One Night Count Areas
+
+We mapped the ONC cities to census tracts, which was a challenging task. The Census uses AFFGEOID (formerly GEO_IDs) for their shapefiles and there uniquely define areas based on three things: State, County, and Census tract. However, there is not a level for city. We approximated to the best of our abilities by overlaying maps for the cities with Census tracts.
+
+```{r}
+# IMPORT OUR DATA
+oncT <- read.csv("https://raw.githubusercontent.com/kitadasmalley/fallChallenge2019/main/data/oncTract2.csv",
+                 header = TRUE,
+                 stringsAsFactors = FALSE) %>%
+  mutate(AFFGEOID = GEO_ID)
+
+oncT$City <- as.factor(oncT$City)
+```
+
+These tract codes were then joined with shapefiles from the Census’ Tigris package in R.
+
+```{r}
+# GEO JOIN DATA (OLD)
+#joinONC<-geo_join(wa_tracts, oncT,
+#                  by_sp="AFFGEOID", by_df="AFFGEOID")
+
+## NOW LEFT_JOIN CAN HANDLE THIS
+joinONC <- wa_tracts %>%
+  left_join(oncT, join_by(AFFGEOID))
+
+# CREAT PLOT IN GGPLOT
+ggplot(data = joinONC, aes(fill = City)) +
+  geom_sf() +
+  # coord_sf(xlim = c(-122.6, -122)) + #zoom in on onc only
+  theme_bw() +
+  ggtitle("King County Cities Included in One Night Count Data")
+```
+
+#### PART B: Mapping Meal Programs
+We also wanted to explore the placement of meal programs in the Seattle area. This data came from the City of Seattle and is also publically hosted on Kaggle. Addresses for each location are provided, which we geo-coded into their latitudes and longitudes.
+
+Note that there is a high concentration of meal programs in downtown Seattle but not many in other locations. This might suggest that this is where homeless people are located.
+
+```{r}
+# IMPORT THE GEOCODED DATA
+food <- read.csv("https://raw.githubusercontent.com/kitadasmalley/fallChallenge2019/main/data/GEOCODE_FOOD%20-%20Sheet1.csv",
+                 header = TRUE)
+
+ggplot(joinONC) +
+  geom_sf(aes(fill = City)) +
+  geom_point(data = food, aes(Long, Lat)) +
+  theme_bw()
+```
+
+
+### Step 4: Getting Data from the US Census Bureau
+
+First you will need to get a API key: <https://api.census.gov/data/key_signup.html>
+
+Once you have an API key load it into your R environment so that you can access the ACS data.
+
+```{r}
+#install.packages("tidycensus")
+library(tidycensus)
+
+# YOUR CODE SHOULD LOOK LIKE THIS
+# census_api_key("INCLUDE YOUR API HERE")
+```
+
+```{r echo=FALSE}
+census_api_key("fbf65ba295ce81cab0a2eccd52d62ca564bf896b", overwrite=TRUE)
+```
+
+Many many variables are included in the ACS. The ACS has 1 and 5 year estimates. Use the following code to see what variables are available:
+
+```{r}
+# Set a year of interest
+this.year = 2010
+
+# This looks at the 5 year estimates
+# You can also do "acs1"
+vars <- load_variables(year = this.year,
+                      dataset = "acs5",
+                      cache = TRUE)
+
+# There are 25070 possible variables
+# dim(vars)
+View(vars)
+```
+
+Explore several possible explantory variables from the American Community Survey (ACS) including:
+
+* B02001_001: Total
+* B03002_003: White alone (Not Hispanic or Latino)
+* B03002_004 Black or African American alone (Not Hispanic or Latino)
+* B03002_012: Hispanic or Latino
+* B03002_005: Native American alone (Not Hispanic or Latino)
+* B03002_006: Asian alone (Not Hispanic or Latino)
+* B03002_007: Native Hawaiian or Pacific Islander alone (Not Hispanic or Latino)
+* B03002_009: Multiple Races (Not Hispanic or Latino)
+* B03002_008: Other (Not Hispanic or Latino)
+* B25064_001 MEDIAN GROSS RENT
+* B25071_001: Rent Burden (MEDIAN GROSS RENT AS A PERCENTAGE OF HOUSEHOLD INCOME)
+* B19013_001: MEDIAN HOUSEHOLD INCOME IN PAST 12 MONTHS
+* B01002_001: Median age
+* B25115_016: Renter Occupied - family
+* B25115_027: Renter Occupied - nonfamily
+
+#### PART A: Getting data for one variable
+```{r}
+# MEDIAN HOME VALUE
+caMedv <- get_acs(geography = "tract", year = this.year,
+               state = "CA", county = "Los Angeles",
+               variables = "B25077_001E",
+               geometry = TRUE)
+
+head(caMedv)
+```
+
+
+#### PART B: You can also pull multiple variables are a time
+Get census tract level estimates for King County:
+
+```{r}
+## Names for variable types
+# Gives five year estimates
+caHouse <- get_acs(geography = "tract", year = this.year,
+                  state = "CA", county = "Los Angeles", geometry = TRUE,
+                  variables = c(popululation = "B02001_001",
+                                median.gross.rent = "B25064_001",
+                                median.household.income = "B19013_001",
+                                rent.burden = "B25071_001"))
+
+head(caHouse)
+```
+
+Notice that we’re going to need to do a little data wrangling so that we have a tidydata format to spread the column named ‘variable’.
+
+```{r}
+caTidy <- as.data.frame(caHouse)[, c(1, 3:4)] %>%
+  spread(variable, estimate)
+
+head(caTidy)
+```
+
+### Step 5: Geojoins and TMAPS
+
+Suppose that we want to study median house value (which is B25077_001E).  Thankfully the get_acs function can include the shape files.
+
+```{r}
+### GET CENSUS DATA
+### B25077_001E: MEDIAN HOME VALUE
+caMedv <- get_acs(geography = "tract", year = this.year,
+              state = "CA", county = "Los Angeles",
+              variables = "B25077_001E",
+              geometry = TRUE) # LET GEOMETRY = TRUE
+# Remove empty geometries
+caMedv <- caMedv[!st_is_empty(caMedv), ]
+```
+
+
+Then we will use the tmap package to plot the data with a green color gradient (with 7 levels).
+
+```{r}
+#install.packages("tmap")
+library(tmap)
+
+## USE TMAP PACKAGE
+tm_shape(caMedv, projection = 26916) +
+  tm_fill("estimate", style = "quantile", n = 7, palette = "Greens") +
+  tm_legend(bg.color = "white", bg.alpha = 0.6)
+```
+
+### Step 6: Interactive Maps with Leaflet
+
+#### PART A: Pop-ups
+
+```{r}
+# MEDIAN HOME VALUE
+
+#install.packages("leaflet")
+library(leaflet)
+
+pal <- colorNumeric("Greens", domain = 0:ceiling(max(caMedv$estimate, na.rm = TRUE)))
+
+popup <- paste("Tract: ", as.character(substring(caMedv$GEOID, 6, 11)), "<br>",
+             "Median Home Value: ", as.character(caMedv$estimate))
+
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = caMedv,
+              fillColor = ~pal(caMedv$estimate),
+              fillOpacity = .7,
+              weight = .5,
+              smoothFactor = 0.2,
+              popup = popup)
+```
+
+#### PART B: Quantile Color Palette
+
+```{r}
+qpal <- colorQuantile("plasma", domain = caMedv$estimate,
+                      n = 5, na.color = "#FFFFFF")
+
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = caMedv,
+              fillColor = ~qpal(caMedv$estimate),
+              fillOpacity = 0.7,
+              color = "grey",
+              opacity = .5,
+              weight = 0.4,
+              smoothFactor = 0.2,
+              popup = popup) %>%
+  addLegend("bottomright", pal = qpal, values = caMedv$estimate,
+            opacity = .7,
+            title = "Percentiles")
+```

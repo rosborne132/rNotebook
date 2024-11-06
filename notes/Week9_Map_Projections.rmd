@@ -1,0 +1,123 @@
+---
+title: 'Quick Lesson: Map Projections'
+author: "STUDENT NAME HERE"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: '5'
+  html_document:
+    collapsed: no
+    toc: yes
+    toc_depth: 5
+    toc_float: yes
+---
+
+### Using `map_data` in `ggplot2`
+
+#### 0: Library Tidyverse
+
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+```
+
+#### A. Load the data
+
+```{r}
+# Load map data
+world_map = map_data("world")
+
+View(world_map) # Shows the data in a table
+```
+
+#### B. Basic Map
+
+```{r}
+world_map %>%
+  ggplot(aes(map_id = region)) +
+  geom_map(map = world_map) +
+  expand_limits(x = world_map$long, y = world_map$lat)
+```
+
+#### C. Projections
+
+Since the globe is a 3D object, we must project it onto a 2D surface to be able to visualize it on paper; however, this affects the presentation of land masses.  There are five properties that can be distorted in projections: shape, area, angles, distance, and direction.  Map makers are able to preserve two of these properties, but the other three are sacrificed.
+
+The *Mercator* projection is one of the most common projections.  It has equally spaced straight meridians, conformal, straight compass courses.  However, this projection is known to distort areas.  Thus, the further from the equator the larger a land mass may appear.
+
+For instance, lets look at Greenland and Algeria:
+
+```{r}
+world_map %>%
+  filter(region %in% c("Greenland", "Algeria")) %>%
+  ggplot(aes(map_id = region)) +
+  geom_map(map = world_map) +
+  expand_limits(x = c(-100, 100), y = c(0, 100)) +
+  coord_map("mercator")
+```
+
+TRUTH: Algeria is 2.4 million $km^2$ and Greenland is 2.2 million $km^2$
+
+Another commonly used project is the *Mollweide*, which is considered to be homalographic (equal-area) where the hemisphere is a circle.
+
+```{r}
+world_map %>%
+  filter(region %in% c("Greenland", "Algeria")) %>%
+  ggplot(aes(map_id = region)) +
+  geom_map(map = world_map) +
+  expand_limits(x = c(-100, 100), y =  c(0, 100)) +
+  coord_map("mollweide")
+```
+
+#### D. High Longitude
+
+The longitude ranges from -180 to 180.  You will notice that lines get strange when we plot the whole world.  This is because there are parts of the US and Russia that extend past the 180th meridian.
+
+```{r}
+world_map %>%
+  ggplot(aes(map_id = region)) +
+  geom_map(map = world_map) +
+  expand_limits(x = world_map$long, y = world_map$lat) +
+  coord_map("mollweide")
+```
+
+We can fix this by taking out longitudes greater than 180.
+
+```{r}
+world_map %>%
+  ggplot(aes(map_id = region)) +
+  geom_map(map = world_map) +
+  expand_limits(x = world_map$long, y = world_map$lat) +
+  coord_map("mollweide", xlim = c(-180, 180))
+```
+
+#### Try it!
+
+Read about different types of projections:
+
+```{r}
+help(mapproject)
+```
+
+The following are the different types of projections available in R.  Some of these projections require additional parameter(s) to be specified.
+
+```{r}
+## PROJECTIONS
+projlist <- c("aitoff", "albers", "azequalarea", "azequidist", "bicentric",
+              "bonne", "conic", "cylequalarea", "cylindrical", "eisenlohr", "elliptic",
+              "fisheye", "gall", "gilbert", "guyou", "harrison", "hex", "homing",
+              "lagrange", "lambert", "laue", "lune", "mercator", "mollweide", "newyorker",
+              "orthographic", "perspective", "polyconic", "rectangular", "simpleconic",
+              "sinusoidal", "tetra", "trapezoidal")
+```
+
+*Task*: Try three different projections and make observations for how the map of the Earth changes.
+
+```{r}
+world_map %>%
+world_map %>%
+  ggplot(aes(map_id = region)) +
+  geom_map(map = world_map) +
+  expand_limits(x = world_map$long, y = world_map$lat) +
+  coord_map("mollweide", xlim = c(-180, 180))
+
+```

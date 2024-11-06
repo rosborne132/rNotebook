@@ -1,0 +1,266 @@
+---
+title: "Exploratory Data Analysis with Project Data"
+author: "Rob Osborne"
+date: "`r Sys.Date()`"
+output:
+  html_document: default
+---
+
+## Load Required Packages
+```{r, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(readr)
+library(dplyr)
+```
+
+## Load Data
+```{r, warning=FALSE, message=FALSE}
+# Define the path to the local zip file
+zip_file <- "/Users/robertosborne/Documents/dev/projects/r/rNotebook/final-project/data/Quote_Data.csv.zip"
+
+# Get the name of the CSV file inside the zip archive
+csv_file <- unzip(zip_file, list = TRUE)$Name[1]
+
+# Read the CSV file directly from the zip archivequote
+data_full <- read_csv(unz(zip_file, csv_file))
+```
+
+```{r, warning=FALSE, message=FALSE}
+# Calculate the number of rows in the data frame
+n <- nrow(data_full)
+
+# Split the data frame into two halves
+# data <- data_full %>% slice(1:(n / 1000))
+data <- data_full
+```
+
+```{r, warning=FALSE, message=FALSE}
+# Configure style constants
+margin_sm <- 14
+
+# Define constants
+source <- "Sources: Snowflake UK Pet Insurance Quotes Data - Examples"
+```
+
+## Plot 1: Top 10 Pet Breeds by Average Annual Premium
+
+### Commentary
+
+My takeaways from this graphic are that the average annual premium for different breeds of pets varies significantly. The top 10 breeds with the most quotes have a wide range of average annual premiums, with some breeds having much higher premiums than others. This information could be useful for Actuarial teams to understand what the most common insured breed is and what the annual premuim tends to be.
+
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+# Calculate the average ANNUALPREMIUM for each BREED and count the
+# number of entries
+data_avg_premium_by_breed <- data %>%
+  group_by(BREED, PETGENDER) %>%
+  summarize(
+    avg_annualpremium = mean(ANNUALPREMIUM, na.rm = TRUE),
+    count = n()
+  ) %>%
+  arrange(PETGENDER, desc(count)) %>%  # Sort by gender and number of entries
+  group_by(PETGENDER) %>%
+  slice_max(order_by = count, n = 10)  # Select the top 10 breeds with the most quotes for each gender
+
+ggplot(
+  data_avg_premium_by_breed,
+  aes(
+    x = reorder(BREED, avg_annualpremium),
+    y = avg_annualpremium,
+    fill = PETGENDER
+  )
+) +
+  geom_bar(stat = "identity", color = "black") +
+  labs(
+    title = "Top 10 Pet Breeds by Average Annual Premium for Each Gender",
+    subtitle = "Analyzing the Most Quoted Breeds to Understand Premium Trends",
+    x = "Breed",
+    y = "Annual Premium (Average)",
+    caption = source
+  ) +
+  facet_grid(rows = vars(PETGENDER)) +  # Arrange facets on top of each other
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    axis.title.x = element_text(margin = margin(t = margin_sm, b = margin_sm)),
+    axis.title.y = element_text(margin = margin(r = margin_sm)),
+    legend.position = "none"
+  )
+```
+
+## Plot 2: Which Providers Offer the Best Excess Limits?
+
+### Commentary
+
+The takeaway from this graphic is that the average excess limit for different providers varies significantly. This information could be useful for Actuarial teams to understand the market trends for excess limits based on their competitors.
+
+#### Shiny App Interaction Ideas
+
+- **Drop-down menu**: Filter by `POSTCODE`.
+- **Checkbox**: Toggle between viewing for Dogs and Cats (`SPECIES`).
+
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+# Remove the pound sign and convert the EXCESSLIMIT to a numeric value
+data$EXCESSLIMIT <- as.numeric(gsub("£", "", data$EXCESSLIMIT))
+# Clean up the PROVIDER names
+data$PROVIDER <- data$PROVIDER %>%
+  gsub("£.*", "", .) %>%  # Remove any text starting with £
+  gsub("[^a-zA-Z]", "", .) %>%
+  trimws()
+
+# Calculate the average EXCESSLIMIT for each PROVIDER and count
+data_avg_excess_limit_by_provider <- data %>%
+  group_by(PROVIDER) %>%
+  summarize(
+    avg_excess_limit = mean(EXCESSLIMIT, na.rm = TRUE),
+    count = n()
+  ) %>%
+  arrange(desc(count))
+
+# Identify the provider with the highest average EXCESSLIMIT
+max_excess_limit_provider <- data_avg_excess_limit_by_provider %>%
+  filter(avg_excess_limit == max(avg_excess_limit)) %>%
+  pull(PROVIDER)
+
+# Create a new column to indicate if the provider has the highest
+# average EXCESSLIMIT
+data_avg_excess_limit_by_provider <- data_avg_excess_limit_by_provider %>%
+  mutate(
+    highest = ifelse(PROVIDER == max_excess_limit_provider, "True", "False")
+  )
+
+ggplot(
+  data_avg_excess_limit_by_provider,
+  aes(
+    x = avg_excess_limit,
+    y = reorder(PROVIDER, avg_excess_limit),
+    fill = highest
+  )
+) +
+  geom_bar(stat = "identity", color = "black") +
+  scale_fill_manual(
+    values = c("True" = "salmon", "False" = "skyblue")
+  ) +
+  labs(
+    title = "Which Providers Offer the Best Excess Limits?",
+    subtitle = "A Comparative Analysis of Average Excess Limits Across Top Insurance Providers",
+    x = "Excess Limit (£)",
+    y = "Provider",
+    caption = source
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(margin = margin(t = margin_sm, b = margin_sm)),
+    axis.title.y = element_text(margin = margin(r = margin_sm)),
+    legend.position = "none"
+  )
+```
+
+## Plot 3: Which Providers Offer the Best Value? Monthly Premium Insights
+
+### Commentary
+
+The takeaway from this graphic is that the monthly premium instalments for different providers vary significantly. This information could be useful for Actuarial teams to understand the market trends for monthly premium instalments based on their competitors averages.
+
+#### Shiny App Interaction Ideas
+
+- **Drop-down menu**: Select POSTCODE to show premiums by region.
+- **Checkbox**: Toggle between viewing for Dogs and Cats (`SPECIES`).
+
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+# Remove the pound sign and convert the MONTHLYPREMIUMINSTALMENT to a
+# numeric value
+data$MONTHLYPREMIUMINSTALMENT <- as.numeric(
+  gsub("£", "", data$MONTHLYPREMIUMINSTALMENT)
+)
+
+# Clean up the PROVIDER names
+data$PROVIDER <- data$PROVIDER %>%
+  gsub("£.*", "", .) %>%  # Remove any text starting with £
+  gsub("[^a-zA-Z]", "", .) %>%
+  trimws()
+
+ggplot(data, aes(x = PROVIDER, y = MONTHLYPREMIUMINSTALMENT, fill = PROVIDER)) +
+  geom_boxplot() +
+  labs(
+    title = "Which Providers Offer the Best Value? Monthly Premium Insights",
+    subtitle = "A Comparative Boxplot of Monthly Premium Instalments Across Top Insurance Providers",
+    x = "Provider",
+    y = "Monthly Premium Instalment (£)",
+    caption = source
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    axis.title.x = element_text(margin = margin(t = margin_sm, b = margin_sm)),
+    axis.title.y = element_text(margin = margin(r = margin_sm)),
+    legend.position = "none"
+  )
+```
+
+## Plot 4: Counting Insurance Quotes by Pet Age
+
+### Commentary
+
+The takeway from this graphic is that most insurance quotes are for pets that are between 0-1 years old being puppies and kittens. This information could be useful for Actuarial teams to understand the age distribution of pets covered by insurance quotes.
+
+#### Shiny App Interaction Ideas
+
+- **Checkbox**: Filter for pets with pre-existing conditions.
+
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+ggplot(data, aes(x = PETAGEYEARS)) +
+  geom_histogram(binwidth = 1, color = "black", fill = "skyblue") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Counting Insurance Quotes by Pet Age",
+    subtitle = "Understanding the Age Distribution of Pets Receiving Insurance Quotes",
+    x = "Pet Age (Years)",
+    y = "Number of Quotes",
+    caption = source
+  ) +
+  facet_wrap(~ SPECIES) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(margin = margin(t = margin_sm, b = margin_sm)),
+    axis.title.y = element_text(margin = margin(r = margin_sm))
+  )
+```
+
+## Plot 5: How Age Affects Monthly Premiums
+
+### Commentary
+
+My takeaways from this graphic are that on average, the monthly installments for pet insurance increase with the age of the pet. This information could be useful for Actuarial teams to understand the market trends for monthly installments based on the age of the pet.
+
+#### Shiny App Interaction Ideas
+
+- **Checkbox**: Toggle to show/hide preexisting conditions.
+- **Checkbox**: Toggle between cats vs dogs
+
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+# Calculate the average MONTHLYPREMIUMINSTALMENT for each PETAGEYEARS and count
+data_avg_monthly_installment_by_age <- data %>%
+  group_by(PETAGEYEARS) %>%
+  summarize(
+    avg_monthly_installment = mean(MONTHLYPREMIUMINSTALMENT, na.rm = TRUE),
+    count = n()
+  )
+
+ggplot(
+  data_avg_monthly_installment_by_age,
+  aes(x = PETAGEYEARS, y = avg_monthly_installment)
+) +
+  geom_bar(stat = "identity", color = "black", fill = "skyblue") +
+  labs(
+    title = "How Age Affects Monthly Premiums",
+    subtitle = "Exploring the Relationship Between Pet Age and Average Monthly Premium Costs",
+    x = "Pet Age (Years)",
+    y = "Average Monthly Premium Instalment",
+    caption = source
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(margin = margin(t = margin_sm, b = margin_sm)),
+    axis.title.y = element_text(margin = margin(r = margin_sm))
+  )
+```

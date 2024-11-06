@@ -1,0 +1,207 @@
+---
+title: 'DataViz: Interactive Demos'
+author: "Heather Kitada Smalley"
+
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The following demos are modified from <https://www.r-graph-gallery.com/interactive-charts.html>.
+
+### I. Examples with `plotly`
+
+#### 1) Scatterplots
+
+```{r warning=FALSE, message=FALSE}
+fert <- read.csv("https://raw.githubusercontent.com/kitadasmalley/FA2020_DataViz/main/data/gapminderFert.csv",
+               header = TRUE)
+
+library(tidyverse)
+#install.packages("plotly")
+library(plotly)
+
+p <- fert %>%
+  ggplot(aes(x=fert, y=life, size = pop, color = continent, frame = year)) +
+  labs(x="Fertility Rate", y = "Life expectancy at birth (years)",
+       caption = "(Based on data from Hans Rosling - gapminder.com)",
+       color = 'Continent', size = "Population (millions)") +
+  ylim(30,100) +
+  geom_point(aes(text = Country))
+
+ggplotly(p)
+```
+
+#### 2) Area Charts and Time Series
+
+```{r warning=FALSE, message=FALSE}
+# Load dataset from github
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/3_TwoNumOrdered.csv", header=T)
+data$date <- as.Date(data$date)
+
+# Usual area chart
+p <- data %>%
+  ggplot( aes(x=date, y=value)) +
+  geom_area(fill="#69b3a2", alpha=0.5) +
+  geom_line(color="#69b3a2") +
+  ylab("bitcoin price ($)")
+
+# Turn it interactive with ggplotly
+p <- ggplotly(p)
+p
+```
+
+### II. Example with `heatmaply`
+
+Here is an example showing 8 general features like population or life expectancy for about 30 countries in 2015. Data come from the French National Institute of Demographic Studies <https://www.ined.fr/en/everything_about_population/data/all-countries/?lst_continent=908&lst_pays=926>
+
+Heatmap (left to right):
+* Pop
+* Birth rate
+* Mortality rate
+* Life expectancy
+* Infant Mortality
+* Children per woman
+* Growth rate
+* Population aged 65
+
+```{r warning=FALSE, message=FALSE}
+library(viridis)
+
+#install.packages("heatmaply")
+library(heatmaply)
+
+# Load data
+data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/multivariate.csv", header = T, sep = ";")
+head(data)
+colnames(data) <- gsub("\\.", " ", colnames(data))
+
+# Select a few country
+data <- data %>%
+  filter(Country %in% c("France", "Sweden", "Italy", "Spain", "England", "Portugal", "Greece", "Peru", "Chile", "Brazil", "Argentina", "Bolivia", "Venezuela", "Australia", "New Zealand", "Fiji", "China", "India", "Thailand", "Afghanistan", "Bangladesh", "United States of America", "Canada", "Burundi", "Angola", "Kenya", "Togo")) %>%
+  arrange(Country) %>%
+  mutate(Country = factor(Country, Country))
+
+# Matrix format
+mat <- data
+rownames(mat) <- mat[,1]
+mat <- mat %>% dplyr::select(-Country, -Group, -Continent)
+mat <- as.matrix(mat)
+
+head(mat)
+
+# Heatmap
+p <- heatmaply(mat,
+               dendrogram = "none",
+               xlab = "", ylab = "",
+               main = "",
+               scale = "column",
+               margins = c(60,100,40,20),
+               grid_color = "white",
+               grid_width = 0.00001,
+               titleX = FALSE,
+               hide_colorbar = TRUE,
+               branches_lwd = 0.1,
+               label_names = c("Country", "Feature:", "Value"),
+               fontsize_row = 5, fontsize_col = 5,
+               labCol = colnames(mat),
+               labRow = rownames(mat),
+               heatmap_layers = theme(axis.line=element_blank())
+)
+p
+```
+
+### III. `streamgraph`
+
+Here is a great resource about the streamgraph htmlwidgtet R Package! <https://hrbrmstr.github.io/streamgraph/>
+
+Using the `babynames` dataset from (1880-2013)
+```{r}
+library(dplyr)
+library(babynames)
+
+#install.packages("remotes")
+#remotes::install_github("hrbrmstr/streamgraph")
+
+library(streamgraph)
+
+babynames %>%
+  filter(grepl("^Kr", name)) %>%
+  group_by(year, name) %>%
+  tally(wt=n) %>%
+  streamgraph("name", "n", "year")
+```
+
+Or you can add a drop down
+
+```{r}
+babynames %>%
+  filter(grepl("^H", name)) %>%
+  group_by(year, name) %>%
+  tally(wt=n) %>%
+  streamgraph("name", "n", "year", offset="zero", interpolate="linear") %>%
+  sg_legend(show=TRUE, label="H- names: ")
+
+```
+
+
+### IV. Chord diagrams with `chorddiag`
+
+```{r}
+#install.packages("devtools")
+#devtools::install_github("mattflor/chorddiag")
+library(chorddiag)
+
+# Create dummy data
+m <- matrix(c(11975,  5871, 8916, 2868,
+              1951, 10048, 2060, 6171,
+              8010, 16145, 8090, 8045,
+              1013,   990,  940, 6907),
+            byrow = TRUE,
+            nrow = 4, ncol = 4)
+
+# A vector of 4 colors for 4 groups
+haircolors <- c("black", "blonde", "brown", "red")
+dimnames(m) <- list(have = haircolors,
+                    prefer = haircolors)
+groupColors <- c("#000000", "#FFDD89", "#957244", "#F26223")
+
+# Build the chord diagram:
+p <- chorddiag(m, groupColors = groupColors, groupnamePadding = 50)
+p
+```
+
+
+### V. Network Diagrams with `networkD3`
+
+```{r}
+#install.packages("networkD3")
+
+library(networkD3)
+
+# create a dataset:
+data <- data.frame(
+  from=c("A", "A", "B", "D", "C", "D", "E", "B", "C", "D", "K", "A", "M"),
+  to=c("B", "E", "F", "A", "C", "A", "B", "Z", "A", "C", "A", "B", "K")
+)
+
+
+# Plot
+p <- simpleNetwork(data, height="100px", width="100px",
+                   Source = 1,                 # column number of source
+                   Target = 2,                 # column number of target
+                   linkDistance = 10,          # distance between node. Increase this value to have more space between nodes
+                   charge = -900,              # numeric value indicating either the strength of the node repulsion (negative value) or attraction (positive value)
+                   fontSize = 14,              # size of the node names
+                   fontFamily = "serif",       # font og node names
+                   linkColour = "#666",        # colour of edges, MUST be a common colour for the whole graph
+                   nodeColour = "#69b3a2",     # colour of nodes, MUST be a common colour for the whole graph
+                   opacity = 0.9,              # opacity of nodes. 0=transparent. 1=no transparency
+                   zoom = T                    # Can you zoom on the figure?
+)
+
+p
+
+```

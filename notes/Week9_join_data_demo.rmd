@@ -1,0 +1,123 @@
+---
+title: 'DataViz: United States Map Demo'
+author: "INSERT NAME HERE"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Code UPDATED in Fall 2024 Due to change in package
+
+### Motivating Example:
+
+In this demo we will be looking voter turn out data from IPUMS from 2016 and 2018.
+
+```{r}
+## LOAD IN VOTER TURN-OUT DATA
+vote<-read.csv("https://raw.githubusercontent.com/kitadasmalley/DATA502/main/FALL2021/Data/voterTurnOut1618.csv",
+              header=TRUE,
+              stringsAsFactors = FALSE)
+
+## CHECK STRUCTURE
+str(vote)
+
+## CHANGE STATE NAMES TO LOWER CASE
+## THIS WILL HELP WITH MATCHING LATER
+vote$State <- tolower(vote$State)
+
+## CHECK THE OUTPUT
+str(vote)
+```
+
+### Step 1: State Polygons
+
+Import the shapes using the `usmaps` package:
+
+```{r}
+## MAPS PACKAGE
+#install.packages("maps")
+library(maps)
+library(tidyverse)
+
+## CALL THE IN THE STATE COORDINATES
+states <- map_data("state")
+
+## WHAT DOES THE OUTPUT LOOK LIKE?
+head(states)
+```
+
+
+
+### Step 2: Joining
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+
+## JOIN THE MAP DATA WITH THE DATA FRAME
+mapPropVote <- states %>%
+  rename(State = region) %>% # You would do this if the column names are different
+  left_join(vote)
+
+head(mapPropVote)
+```
+
+### Step 3: Plot with `ggplot`
+
+#### A) Default coloring
+```{r}
+## LETS LOOK AT THE ELECTION YEAR
+this.year = 2016
+
+## YOU CAN PIPE INTO A GGPLOT
+## FILTER
+## NOTE THAT GROUP IS NEEDED TO HAVE THE PROPER CONNECTIONS
+mapPropVote%>%
+  filter(YEAR == this.year) %>%
+  ggplot(aes(x = long, y = lat)) +
+  geom_polygon(aes(fill = wgtPropVote, group = group), color = "black") +
+  theme_bw() +
+  coord_map()
+```
+
+#### B) Color accessible
+
+```{r message=FALSE, warning=FALSE}
+#install.packages("viridis")
+library(viridis)
+
+## SCALE FOR VIRIDIS PACKAGE
+mapPropVote %>%
+  filter(YEAR == this.year) %>%
+  ggplot(aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = wgtPropVote), color = "black") +
+  theme_bw() +
+  coord_map() +
+  scale_fill_viridis(option = "magma", direction = -1)
+```
+
+#### C) Basic Interaction with `plotly`
+
+```{r warning=FALSE, message=FALSE}
+#install.packages("plotly")
+library(plotly)
+
+## SAVE THE GGPLOT OBJECT
+p <- mapPropVote %>%
+  filter(YEAR == this.year) %>%
+  ggplot(aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill = wgtPropVote), color = "black") +
+  theme_bw() +
+  coord_map() +
+  scale_fill_viridis(option = "magma", direction = -1)
+
+#p
+
+## GGPLOT OBJECT IS AN INPUT TO PLOTLY
+p2 <- ggplotly(p, width = 700, height = 400)
+
+
+## INSERT CODE HERE ##
+p2
+```
