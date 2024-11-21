@@ -7,9 +7,10 @@ library(readr)
 library(httr)
 library(DT)
 library(caret)
-# library(randomForest)
 
+# Load resources ============================
 url <- "https://github.com/rosborne132/rNotebook/raw/main/final-project/data/Quote_Data_Small.csv.zip"
+model <- readRDS("www/models/model_rf.rds")
 
 # Download and unzip the CSV file ============
 temp <- tempfile()
@@ -54,33 +55,15 @@ quote_data$BREED <- quote_data$BREED %>%
 margin_sm <- 14
 source <- "Sources: Snowflake UK Pet Insurance Quotes Data - Examples"
 
-# Train the model ===========================
-set.seed(123)
-model_data <- quote_data %>%
-  select(ANNUALPREMIUM, PETAGEYEARS, PETGENDER, SPECIES) %>%
-  na.omit() %>%
-  sample_n(10000)
-
-model_data$PETGENDER <- as.factor(model_data$PETGENDER)
-model_data$SPECIES <- as.factor(model_data$SPECIES)
-
-train_control <- trainControl(method = "cv", number = 10)
-model <- train(
-  ANNUALPREMIUM ~ PETAGEYEARS + PETGENDER + SPECIES,
-  data = model_data,
-  method = "rf",
-  trControl = train_control
-)
-
 # Define the UI ==============================
 ui <- fluidPage(
   includeCSS("www/style.css"),
   navbarPage("PawSure",
     tabPanel("Background",
-      includeHTML("www/background.html")
+      includeHTML("www/pages/background.html")
     ),
     tabPanel("Problem Statement",
-      includeHTML("www/problem_statement.html")
+      includeHTML("www/pages/problem_statement.html")
     ),
     tabPanel("The Data",
       DTOutput("table")
@@ -161,7 +144,7 @@ ui <- fluidPage(
       )
     ),
     tabPanel("Conclusion",
-      includeHTML("www/conclusion.html")
+      includeHTML("www/pages/conclusion.html")
     )
   )
 )
@@ -180,7 +163,8 @@ server <- function(input, output) {
       group_by(BREED) %>%
       summarize(
         avg_annualpremium = mean(ANNUALPREMIUM, na.rm = TRUE),
-        count = n()
+        count = n(),
+        .groups = 'drop'
       ) %>%
       arrange(desc(count)) %>%
       slice_max(order_by = count, n = 20)
@@ -226,7 +210,8 @@ server <- function(input, output) {
       group_by(PETAGEYEARS, PETGENDER) %>%
       summarize(
         avg_monthly_installment = mean(MONTHLYPREMIUMINSTALMENT, na.rm = TRUE),
-        count = n()
+        count = n(),
+        .groups = 'drop'
       )
   })
 
@@ -265,12 +250,20 @@ server <- function(input, output) {
   })
 
   output$plot3 <- renderPlot({
+    # Calculate the median for each provider and reorder the factor levels
+    data <- data_by_species()
+    provider_order <- names(
+      sort(tapply(data$MONTHLYPREMIUMINSTALMENT, data$PROVIDER, median))
+    )
+    data$PROVIDER <- factor(data$PROVIDER, levels = provider_order)
+
     ggplot(
-      data_by_species(),
-      aes(x = MONTHLYPREMIUMINSTALMENT, y = PROVIDER, fill = PROVIDER)
+      data,
+      aes(x = PROVIDER, y = MONTHLYPREMIUMINSTALMENT, fill = PROVIDER)
     ) +
       geom_boxplot() +
-      scale_x_continuous(
+      coord_flip() +
+      scale_y_continuous(
         labels = scales::label_dollar(prefix = "£"),
         limits = c(0, max_threshold())
       ) +
@@ -290,6 +283,20 @@ server <- function(input, output) {
         axis.title.y = element_text(margin = margin(r = margin_sm)),
         legend.position = "none"
       )
+  })
+
+  # Machine Learning Demo ===================
+  observeEvent(input$predict, {
+    new_data <- data.frame(
+      PETAGEYEARS = input$age,
+      PETGENDER = input$gender,
+      SPECIES = input$species
+    )
+
+    prediction <- predict(model, new_data)
+    output$quoteDemo <- renderPrint({
+      paste("Predicted Annual Premium: £", round(prediction, 2))
+    })
   })
 }
 

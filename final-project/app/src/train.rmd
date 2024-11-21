@@ -1,0 +1,69 @@
+## Load libraries
+
+```{r, message=FALSE}
+library(caret)
+library(dplyr)
+library(randomForest)
+library(readr)
+```
+
+## Load the data
+
+```{r, message=FALSE}
+url <- "https://github.com/rosborne132/rNotebook/raw/main/final-project/data/Quote_Data.csv.zip"
+
+# Download and unzip the CSV file ============
+temp <- tempfile()
+download.file(url, temp)
+unzip(temp, exdir = tempdir())
+csv_file <- list.files(tempdir(), pattern = "\\.csv$", full.names = TRUE)
+quote_data <- read_csv(
+  csv_file,
+  show_col_types = FALSE,
+  col_select = c(
+    "ANNUALPREMIUM",
+    "PETAGEYEARS",
+    "PETGENDER",
+    "SPECIES",
+  )
+)
+```
+
+## Train the model
+
+```{r, message=FALSE}
+# Clean up the data =========================
+quote_data$MONTHLYPREMIUMINSTALMENT <- as.numeric(
+  gsub("£", "", quote_data$MONTHLYPREMIUMINSTALMENT)
+)
+
+quote_data$PROVIDER <- quote_data$PROVIDER %>%
+  gsub("£.*", "", .) %>%
+  gsub("[0-9]", "", .) %>%
+  trimws()
+
+quote_data$BREED <- quote_data$BREED %>%
+  tolower() %>%
+  trimws()
+
+# Prepare the data for training
+model_data <- quote_data %>%
+  select(ANNUALPREMIUM, PETAGEYEARS, PETGENDER, SPECIES) %>%
+  na.omit() %>%
+  sample_n(10000)
+
+model_data$PETGENDER <- as.factor(model_data$PETGENDER)
+model_data$SPECIES <- as.factor(model_data$SPECIES)
+
+# Train the model
+train_control <- trainControl(method = "cv", number = 10)
+model <- train(
+  ANNUALPREMIUM ~ PETAGEYEARS + PETGENDER + SPECIES,
+  data = model_data,
+  method = "rf",
+  trControl = train_control
+)
+
+# Save the model to a file
+saveRDS(model, "model_rf.rds")
+```
