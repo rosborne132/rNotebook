@@ -22,6 +22,7 @@ quote_data <- read_csv(
   show_col_types = FALSE,
   col_select = c(
     "ANNUALPREMIUM",
+    "MONTHLYPREMIUMINSTALMENT",
     "PETAGEYEARS",
     "PETGENDER",
     "SPECIES",
@@ -29,7 +30,7 @@ quote_data <- read_csv(
 )
 ```
 
-## Train the model
+## Prepare the data
 
 ```{r, message=FALSE}
 # Clean up the data =========================
@@ -37,27 +38,31 @@ quote_data$MONTHLYPREMIUMINSTALMENT <- as.numeric(
   gsub("£", "", quote_data$MONTHLYPREMIUMINSTALMENT)
 )
 
-quote_data$PROVIDER <- quote_data$PROVIDER %>%
-  gsub("£.*", "", .) %>%
-  gsub("[0-9]", "", .) %>%
-  trimws()
-
-quote_data$BREED <- quote_data$BREED %>%
-  tolower() %>%
-  trimws()
-
 # Prepare the data for training
 model_data <- quote_data %>%
-  select(ANNUALPREMIUM, PETAGEYEARS, PETGENDER, SPECIES) %>%
+  select(
+    ANNUALPREMIUM,
+    PETAGEYEARS,
+    PETGENDER,
+    SPECIES,
+    MONTHLYPREMIUMINSTALMENT
+  ) %>%
   na.omit() %>%
-  sample_n(10000)
+  filter(is.finite(MONTHLYPREMIUMINSTALMENT))
 
 model_data$PETGENDER <- as.factor(model_data$PETGENDER)
 model_data$SPECIES <- as.factor(model_data$SPECIES)
+```
 
+
+## Train the model
+
+### Annual Premium Model
+
+```{r, message=FALSE}
 # Train the model
 train_control <- trainControl(method = "cv", number = 10)
-model <- train(
+ap_model <- train(
   ANNUALPREMIUM ~ PETAGEYEARS + PETGENDER + SPECIES,
   data = model_data,
   method = "rf",
@@ -65,5 +70,21 @@ model <- train(
 )
 
 # Save the model to a file
-saveRDS(model, "model_rf.rds")
+saveRDS(model, "app/src/www/models/ap_model.rds")
+```
+
+### Monthly Premium Installments Model
+
+```{r, message=FALSE}
+# Train the model
+train_control <- trainControl(method = "cv", number = 10)
+mpi_model <- train(
+  MONTHLYPREMIUMINSTALMENT ~ PETAGEYEARS + PETGENDER + SPECIES,
+  data = model_data,
+  method = "rf",
+  trControl = train_control
+)
+
+# Save the model to a file
+saveRDS(mpi_model, "app/src/www/models/mpi_model.rds")
 ```
