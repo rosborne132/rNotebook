@@ -8,6 +8,7 @@ library(DT)
 library(caret)
 
 # Load resources ============================
+# TODO: load full data set
 url <- "https://github.com/rosborne132/rNotebook/raw/main/final-project/data/Quote_Data_Small.csv.zip"
 ap_model <- readRDS("www/models/ap_model.rds")
 mpi_model <- readRDS("www/models/mpi_model.rds")
@@ -113,28 +114,6 @@ ui <- fluidPage(
           ),
           mainPanel(
             plotOutput("plot2", height = "1200px")
-          )
-        )
-      ),
-      tabPanel("Plot3",
-        sidebarLayout(
-          sidebarPanel(
-            selectInput(
-              "select_species_2",
-              label = h3("Species"),
-              choices = c("Cat", "Dog"),
-              selected = "Cat"
-            ),
-            sliderInput(
-              "monthly_premium_slider",
-              "Monthly Premium Instalment Range",
-              min = 50,
-              max = 1500,
-              value = 50
-            )
-          ),
-          mainPanel(
-            plotOutput("plot3", height = "1200px")
           )
         )
       ),
@@ -248,52 +227,6 @@ server <- function(input, output) {
         ),
         axis.title.y = element_text(margin = margin(r = margin_sm)),
         legend.position = "top"
-      )
-  })
-
-  # Plot 3 ==================================
-  data_by_species <- reactive({
-    quote_data %>%
-      filter(SPECIES == input$select_species_2)
-  })
-
-  max_threshold <- reactive({
-    input$monthly_premium_slider
-  })
-
-  output$plot3 <- renderPlot({
-    # Calculate the median for each provider and reorder the factor levels
-    data <- data_by_species()
-    provider_order <- names(
-      sort(tapply(data$MONTHLYPREMIUMINSTALMENT, data$PROVIDER, median))
-    )
-    data$PROVIDER <- factor(data$PROVIDER, levels = provider_order)
-
-    ggplot(
-      data,
-      aes(x = PROVIDER, y = MONTHLYPREMIUMINSTALMENT, fill = PROVIDER)
-    ) +
-      geom_boxplot() +
-      coord_flip() +
-      scale_y_continuous(
-        labels = scales::label_dollar(prefix = "£"),
-        limits = c(0, max_threshold())
-      ) +
-      labs(
-        title = "Which Providers Offer the Best Value? Monthly Premium Insights",
-        subtitle = "A Comparative Boxplot of Monthly Premium Instalments Across Top   Insurance Providers",
-        x = "Monthly Premium Instalment",
-        y = "Provider",
-        caption = source
-      ) +
-      theme_minimal() +
-      theme(
-        axis.text.x = element_text(angle = 90, hjust = 1),
-        axis.title.x = element_text(
-          margin = margin(t = margin_sm, b = margin_sm)
-        ),
-        axis.title.y = element_text(margin = margin(r = margin_sm)),
-        legend.position = "none"
       )
   })
 
