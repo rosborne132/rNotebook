@@ -59,18 +59,18 @@ source <- "Sources: Snowflake UK Pet Insurance Quotes Data - Examples"
 # Define the UI ==============================
 ui <- fluidPage(
   includeCSS("www/style.css"),
-  navbarPage("PawSure",
+  navbarPage("BeanSprouts",
     tabPanel("Background",
       includeHTML("www/pages/background.html")
     ),
-    tabPanel("Problem Statement",
-      includeHTML("www/pages/problem_statement.html")
+    tabPanel("Mission",
+      includeHTML("www/pages/mission.html")
     ),
-    tabPanel("The Data",
+    tabPanel("Data",
       sidebarLayout(
         sidebarPanel(
           h3("The Data!"),
-          "This dataset contains over 1 million pet insurance quotes from the UK market, collected over a two-day period. The quotes include essential pricing factors such as age, breed, and species of cats and dogs. Understanding our potential customers' profiles and their current insurance costs is crucial when entering a new market."
+          p("Our dataset contains over one million pet insurance quotes from the UK market, collected over two days. Each quote includes key pricing factors like age, breed, and species for cats and dogs. This dataset enables insurers, analysts, and researchers to make data-driven decisions through market insights, trend identification, and pricing optimization. Understanding customer profiles and current insurance costs is essential for successful market entry."),
         ),
         mainPanel(
           h3("UK Pet Insurance Quotes"),
@@ -117,6 +117,21 @@ ui <- fluidPage(
           )
         )
       ),
+      tabPanel("Plot3",
+        sidebarLayout(
+          sidebarPanel(
+            selectInput(
+              "select_gender_quote",
+              label = h3("Gender"),
+              choices = c("Male", "Female"),
+              selected = "Male"
+            ),
+          ),
+          mainPanel(
+            plotOutput("plot3", height = "1200px")
+          )
+        )
+      )
     ),
     tabPanel("Quote Estimator",
       sidebarLayout(
@@ -227,6 +242,31 @@ server <- function(input, output) {
         ),
         axis.title.y = element_text(margin = margin(r = margin_sm)),
         legend.position = "top"
+      )
+  })
+
+  # Plot 3 ==================================
+  data_by_gender <- reactive({
+    quote_data %>%
+      filter(PETGENDER ==input$select_gender_quote)
+  })
+
+  output$plot3 <- renderPlot({
+    ggplot(data_by_gender(), aes(x = PETAGEYEARS)) +
+      geom_histogram(binwidth = 1, color = "black", fill = "skyblue") +
+      scale_y_continuous(labels = scales::comma) +
+      labs(
+          title = "Counting Insurance Quotes by Pet Age",
+          subtitle = "Understanding the Age Distribution of Pets Receiving Insurance Quotes",
+          x = "Pet Age (Years)",
+          y = "Number of Quotes",
+          caption = source
+      ) +
+      facet_wrap(~ SPECIES) +
+      theme_minimal() +
+      theme(
+          axis.title.x = element_text(margin = margin(t = margin_sm, b = margin_sm)),
+          axis.title.y = element_text(margin = margin(r = margin_sm))
       )
   })
 
