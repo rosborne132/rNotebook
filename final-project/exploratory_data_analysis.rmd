@@ -11,12 +11,13 @@ output:
 library(ggplot2)
 library(readr)
 library(dplyr)
+library(gridExtra)
 ```
 
 ## Load Data
 ```{r, warning=FALSE, message=FALSE}
 # Define the path to the local zip file
-zip_file <- "/Users/robertosborne/Documents/dev/projects/r/rNotebook/final-project/data/Quote_Data.csv.zip"
+zip_file <- "/Users/robertosborne/Documents/dev/projects/r/rNotebook/final-project/data/Quote_Data_Small.csv.zip"
 
 # Get the name of the CSV file inside the zip archive
 csv_file <- unzip(zip_file, list = TRUE)$Name[1]
@@ -263,4 +264,98 @@ ggplot(
     axis.title.x = element_text(margin = margin(t = margin_sm, b = margin_sm)),
     axis.title.y = element_text(margin = margin(r = margin_sm))
   )
+```
+
+## Plot 6: Monthly Premiums by Pet Age and Breed
+
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+data_avg_premium_by_breed <- data %>%
+  filter(PETGENDER == "Male", SPECIES == "Dog") %>%
+  group_by(BREED) %>%
+  summarize(
+    avg_annualpremium = mean(ANNUALPREMIUM, na.rm = TRUE),
+    count = n(),
+    .groups = 'drop'
+  ) %>%
+  arrange(desc(count)) %>%
+  slice_max(order_by = count, n = 10)
+
+# Take data_avg_premium_by_breed and reorder the BREED
+# based on the avg_annualpremium
+data_avg_premium_by_breed <- data_avg_premium_by_breed %>%
+  mutate(BREED = factor(BREED, levels = BREED[order(avg_annualpremium)]))
+
+a <- ggplot(
+  data_avg_premium_by_breed,
+  aes(
+    x = BREED,
+    y = avg_annualpremium
+  )
+) +
+  geom_bar(stat = "identity", color = "black") +
+  scale_y_continuous(labels = scales::label_dollar(prefix = "£")) +
+  labs(
+    title = "Top 10 Pet Breeds by Average Annual Premium for Each Gender",
+    subtitle = "Analyzing the Most Quoted Breeds to Understand Premium Trends",
+    x = "Breed",
+    y = "Annual Premium (Average)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.title.x = element_text(
+      margin = margin(t = margin_sm, b = margin_sm)
+    ),
+    axis.title.y = element_text(margin = margin(r = margin_sm)),
+    legend.position = "none"
+  )
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+# Reorder BREED in data_total_quote_by_breed to match data_avg_premium_by_breed
+data_total_quote_by_breed <- data %>%
+  filter(BREED %in% data_avg_premium_by_breed$BREED) %>%
+  group_by(BREED) %>%
+  summarize(
+    total_quotes = n()
+  ) %>%
+  mutate(BREED = factor(BREED, levels = levels(data_avg_premium_by_breed$BREED)))
+
+# Plot the bar graph
+b <- ggplot(data_total_quote_by_breed, aes(x = BREED, y = total_quotes)) +
+  geom_bar(stat = "identity", color = "black", fill = "skyblue") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    x = "Breed"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(margin = margin(t = margin_sm, b = margin_sm)),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+data_total_breed_count <- data %>%
+  filter(BREED %in% data_avg_premium_by_breed$BREED)
+
+c <- ggplot(data_total_breed_count, aes(x = PETAGEYEARS)) +
+  geom_histogram(binwidth = 1, color = "black", fill = "skyblue") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    x = "Pet Age (Years)",
+    y = "Number of Quotes"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_text(margin = margin(t = margin_sm, b = margin_sm)),
+    axis.title.y = element_text(margin = margin(r = margin_sm))
+  )
+```
+
+
+```{r, warning=FALSE, message=FALSE, fig.width=10, fig.height=10}
+grid.arrange(a, arrangeGrob(c, b, ncol = 2, widths = c(1, 2)), nrow = 2)
 ```

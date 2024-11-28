@@ -6,6 +6,7 @@ library(readr)
 library(httr)
 library(DT)
 library(caret)
+library(gridExtra)
 
 # Load resources ============================
 # TODO: load full data set
@@ -96,6 +97,8 @@ ui <- fluidPage(
             )
           ),
           mainPanel(
+            h2("Top 10 Pet Breeds by Average Annual"),
+            p("This plot shows the top 10 pet breeds by average annual premium"),
             plotOutput("plot1", height = "1200px")
           )
         )
@@ -117,21 +120,6 @@ ui <- fluidPage(
           )
         )
       ),
-      tabPanel("Plot3",
-        sidebarLayout(
-          sidebarPanel(
-            selectInput(
-              "select_gender_quote",
-              label = h3("Gender"),
-              choices = c("Male", "Female"),
-              selected = "Male"
-            ),
-          ),
-          mainPanel(
-            plotOutput("plot3", height = "1200px")
-          )
-        )
-      )
     ),
     tabPanel("Quote Estimator",
       sidebarLayout(
@@ -165,7 +153,10 @@ server <- function(input, output) {
   # Plot 1 ==================================
   data_avg_premium_by_breed <- reactive({
     quote_data %>%
-      filter(PETGENDER == input$select_gender, SPECIES == input$select_species) %>%
+      filter(
+        PETGENDER == input$select_gender,
+        SPECIES == input$select_species
+      ) %>%
       group_by(BREED) %>%
       summarize(
         avg_annualpremium = mean(ANNUALPREMIUM, na.rm = TRUE),
@@ -173,36 +164,91 @@ server <- function(input, output) {
         .groups = 'drop'
       ) %>%
       arrange(desc(count)) %>%
-      slice_max(order_by = count, n = 20)
+      slice_max(order_by = count, n = 10)
   })
 
   output$plot1 <- renderPlot({
-    ggplot(
-      data_avg_premium_by_breed(),
+    # Take data_avg_premium_by_breed and reorder the BREED
+    # based on the avg_annualpremium
+    data_avg_premium_by_breed_sorted <- data_avg_premium_by_breed() %>%
+      mutate(BREED = factor(BREED, levels = BREED[order(avg_annualpremium)]))
+
+    data_total_quote_by_breed <- quote_data %>%
+      filter(BREED %in% data_avg_premium_by_breed_sorted$BREED) %>%
+      group_by(BREED) %>%
+      summarize(
+        total_quotes = n()
+      ) %>%
+      mutate(
+        BREED = factor(
+          BREED,
+          levels = levels(data_avg_premium_by_breed_sorted$BREED)
+        ),
+      )
+
+    data_total_breed_count <- quote_data %>%
+      filter(BREED %in% data_avg_premium_by_breed_sorted$BREED)
+
+    a <- ggplot(
+      data_avg_premium_by_breed_sorted,
       aes(
-        x = avg_annualpremium,
-        y = reorder(BREED, avg_annualpremium),
-        fill = "skyblue"
+        x = BREED,
+        y = avg_annualpremium
       )
     ) +
       geom_bar(stat = "identity", color = "black") +
-      scale_x_continuous(labels = scales::label_dollar(prefix = "£")) +
+      scale_y_continuous(labels = scales::label_dollar(prefix = "£")) +
       labs(
-        title = "Top 10 Pet Breeds by Average Annual Premium for Each Gender",
-        subtitle = "Analyzing the Most Quoted Breeds to Understand Premium Trends",
-        x = "Annual Premium (Average)",
-        y = "Breed",
-        caption = source
+        x = "Breed",
+        y = "Annual Premium (Average)"
       ) +
       theme_minimal() +
       theme(
-        axis.text.x = element_text(angle = 90, hjust = 1),
+        axis.text.x = element_text(angle = 45, hjust = 1),
         axis.title.x = element_text(
           margin = margin(t = margin_sm, b = margin_sm)
         ),
         axis.title.y = element_text(margin = margin(r = margin_sm)),
         legend.position = "none"
       )
+
+    b <- ggplot(data_total_quote_by_breed, aes(x = BREED, y = total_quotes)) +
+      geom_bar(stat = "identity", color = "black", fill = "skyblue") +
+      scale_y_continuous(labels = scales::comma) +
+      labs(
+        x = "Breed"
+      ) +
+      theme_minimal() +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title.x = element_text(
+          margin = margin(t = margin_sm, b = margin_sm)
+        ),
+        axis.title.y = element_blank()
+      )
+
+    c <- ggplot(data_total_breed_count, aes(x = PETAGEYEARS)) +
+      geom_histogram(binwidth = 1, color = "black", fill = "skyblue") +
+      scale_y_continuous(labels = scales::comma) +
+      labs(
+        x = "Pet Age (Years)",
+        y = "Number of Quotes"
+      ) +
+      theme_minimal() +
+      theme(
+        axis.title.x = element_text(
+          margin = margin(t = margin_sm, b = margin_sm)
+        ),
+        axis.title.y = element_text(margin = margin(r = margin_sm))
+      )
+
+    # Convert ggplot objects to grobs
+    a_grob <- ggplotGrob(a)
+    b_grob <- ggplotGrob(b)
+    c_grob <- ggplotGrob(c)
+
+    # Arrange the plots using grid.arrange
+    grid.arrange(a_grob, arrangeGrob(c_grob, b_grob, ncol = 2, widths = c(1, 2)), nrow = 2)
   })
 
   # Plot 2 ==================================
@@ -242,31 +288,6 @@ server <- function(input, output) {
         ),
         axis.title.y = element_text(margin = margin(r = margin_sm)),
         legend.position = "top"
-      )
-  })
-
-  # Plot 3 ==================================
-  data_by_gender <- reactive({
-    quote_data %>%
-      filter(PETGENDER ==input$select_gender_quote)
-  })
-
-  output$plot3 <- renderPlot({
-    ggplot(data_by_gender(), aes(x = PETAGEYEARS)) +
-      geom_histogram(binwidth = 1, color = "black", fill = "skyblue") +
-      scale_y_continuous(labels = scales::comma) +
-      labs(
-          title = "Counting Insurance Quotes by Pet Age",
-          subtitle = "Understanding the Age Distribution of Pets Receiving Insurance Quotes",
-          x = "Pet Age (Years)",
-          y = "Number of Quotes",
-          caption = source
-      ) +
-      facet_wrap(~ SPECIES) +
-      theme_minimal() +
-      theme(
-          axis.title.x = element_text(margin = margin(t = margin_sm, b = margin_sm)),
-          axis.title.y = element_text(margin = margin(r = margin_sm))
       )
   })
 
