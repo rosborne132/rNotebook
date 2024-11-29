@@ -1,12 +1,13 @@
 # Load libraries ============================
-library(shiny)
-library(ggplot2)
-library(dplyr)
-library(readr)
-library(httr)
-library(DT)
+library(bslib)
 library(caret)
+library(dplyr)
+library(DT)
+library(ggplot2)
 library(gridExtra)
+library(httr)
+library(readr)
+library(shiny)
 
 # Load resources ============================
 # TODO: load full data set
@@ -59,6 +60,7 @@ source <- "Sources: Snowflake UK Pet Insurance Quotes Data - Examples"
 
 # Define the UI ==============================
 ui <- fluidPage(
+  theme = bs_theme(version = 5, bootswatch = "minty"),
   includeCSS("www/style.css"),
   navbarPage("BeanSprouts",
     tabPanel("Background",
