@@ -55,8 +55,11 @@ quote_data$BREED <- quote_data$BREED %>%
   trimws()
 
 # Define constants ===========================
-margin_sm <- 14
+margin_sm <- 16
+axis_title_size <- 20
+axis_text_size <- 14
 source <- "Sources: Snowflake UK Pet Insurance Quotes Data - Examples"
+bar_color <- "#E1EFE0"
 
 # Define the UI ==============================
 ui <- fluidPage(
@@ -83,26 +86,31 @@ ui <- fluidPage(
     ),
     navbarMenu("Findings",
       tabPanel("Plot1",
-        sidebarLayout(
-          sidebarPanel(
-            selectInput(
-              "select_gender",
-              label = h3("Gender"),
-              choices = c("Male", "Female"),
-              selected = "Male"
-            ),
-            selectInput(
-              "select_species",
-              label = h3("Species"),
-              choices = c("Cat", "Dog"),
-              selected = "Cat"
+        verticalLayout(
+          wellPanel(
+            h2("Understanding Pet Insurance Pricing Through Average Annual Premiums"),
+            p("By analyzing the average annual premiums and the number of quotes for the top breeds, we can identify patterns in customer demand and pricing behavior. The bar chart of average premiums provides insights into which breeds are associated with higher costs, while the total number of quotes by breed highlights the most popular choices among customers. Additionally, the histogram of pet ages for these breeds reveals key demographic trends. Together, these insights support data-driven decisions to optimize pricing strategies, ensuring competitiveness in the market and aligning with our goal of offering affordable and tailored coverage."),
+            fluidRow(
+              column(6,
+                selectInput(
+                  "select_gender",
+                  label = h3("Gender"),
+                  choices = c("Male", "Female"),
+                  selected = "Male"
+                )
+              ),
+              column(6,
+                selectInput(
+                  "select_species",
+                  label = h3("Species"),
+                  choices = c("Cat", "Dog"),
+                  selected = "Cat"
+                )
+              )
             )
           ),
-          mainPanel(
-            h2("Top 10 Pet Breeds by Average Annual"),
-            p("This plot shows the top 10 pet breeds by average annual premium"),
-            plotOutput("plot1", height = "1200px")
-          )
+          br(),
+          plotOutput("plot1", height = "1200px")
         )
       ),
       tabPanel("Plot2",
@@ -191,6 +199,7 @@ server <- function(input, output) {
     data_total_breed_count <- quote_data %>%
       filter(BREED %in% data_avg_premium_by_breed_sorted$BREED)
 
+    # Plot Average annual premium by breed
     a <- ggplot(
       data_avg_premium_by_breed_sorted,
       aes(
@@ -198,7 +207,7 @@ server <- function(input, output) {
         y = avg_annualpremium
       )
     ) +
-      geom_bar(stat = "identity", color = "black") +
+      geom_bar(stat = "identity", color = "black", fill = bar_color) +
       scale_y_continuous(labels = scales::label_dollar(prefix = "£")) +
       labs(
         x = "Breed",
@@ -206,31 +215,50 @@ server <- function(input, output) {
       ) +
       theme_minimal() +
       theme(
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        axis.title.x = element_text(
-          margin = margin(t = margin_sm, b = margin_sm)
+        axis.text.x = element_text(
+          angle = 45,
+          hjust = 1,
+          size = axis_text_size
         ),
-        axis.title.y = element_text(margin = margin(r = margin_sm)),
-        legend.position = "none"
+        axis.text.y = element_text(size = axis_text_size),
+        axis.title.x = element_text(
+          margin = margin(t = margin_sm, b = margin_sm),
+          size = axis_title_size
+        ),
+        axis.title.y = element_text(
+          margin = margin(r = margin_sm),
+          size = axis_title_size
+        ),
+        legend.position = "none",
+        panel.grid.major.x = element_blank()
       )
 
+    # Plot Total quotes by breed
     b <- ggplot(data_total_quote_by_breed, aes(x = BREED, y = total_quotes)) +
-      geom_bar(stat = "identity", color = "black", fill = "skyblue") +
+      geom_bar(stat = "identity", color = "black", fill = bar_color) +
       scale_y_continuous(labels = scales::comma) +
       labs(
         x = "Breed"
       ) +
       theme_minimal() +
       theme(
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        axis.title.x = element_text(
-          margin = margin(t = margin_sm, b = margin_sm)
+        axis.text.x = element_text(
+          angle = 45,
+          hjust = 1,
+          size = axis_text_size
         ),
-        axis.title.y = element_blank()
+        axis.text.y = element_text(size = axis_text_size),
+        axis.title.x = element_text(
+          margin = margin(t = margin_sm, b = margin_sm),
+          size = axis_title_size
+        ),
+        axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank()
       )
 
+    # Plot Number of quotes by pet age
     c <- ggplot(data_total_breed_count, aes(x = PETAGEYEARS)) +
-      geom_histogram(binwidth = 1, color = "black", fill = "skyblue") +
+      geom_histogram(binwidth = 1, color = "black", fill = bar_color) +
       scale_y_continuous(labels = scales::comma) +
       labs(
         x = "Pet Age (Years)",
@@ -238,10 +266,18 @@ server <- function(input, output) {
       ) +
       theme_minimal() +
       theme(
+        axis.text.x = element_text(size = axis_text_size),
+        axis.text.y = element_text(size = axis_text_size),
         axis.title.x = element_text(
-          margin = margin(t = margin_sm, b = margin_sm)
+          margin = margin(t = margin_sm, b = margin_sm),
+          size = axis_title_size
         ),
-        axis.title.y = element_text(margin = margin(r = margin_sm))
+        axis.title.y = element_text(
+          margin = margin(r = margin_sm),
+          size = axis_title_size
+        ),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank()
       )
 
     # Convert ggplot objects to grobs

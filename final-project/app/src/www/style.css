@@ -1,132 +1,270 @@
-:root {
-    --primary-color: #008763;
-    --secondary-color: #1573B1;
-    --black: #1D1D35;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Montserrat', sans-serif;
 }
 
 body {
-    color: var(--black);
+    color: #1D1D35;
+    line-height: 1.6;
     margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-}
-
-header {
-    text-align: center;
-}
-
-h2 {
-    padding: 1rem 0;
-}
-
-section {
-    padding: 2rem 0;
-}
-
-button {
-    background-color: var(--secondary-color);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    border-radius: 5px;
 }
 
 .container {
+    max-width: 1200px;
     margin: 0 auto;
-    width: 75%;
+    padding: 20px;
+}
+
+section {
+    padding: 50px 0;
+    text-align: center;
+}
+
+section:nth-of-type(even) {
+    background-color: #DFF1FF;
 }
 
 #hero {
-    background-color: var(--primary-color);
-    color: white;
+    background-color: #E1EFE0;
+    padding: 100px 20px;
     text-align: center;
-    padding: 2rem 0;
+}
+
+#hero h1,
+#hero p {
+    margin-bottom: 20px;
+    color: #1D1D35;
 }
 
 #hero h1 {
+    font-size: 3rem;
+}
+
+#hero p {
+    font-size: 1.5rem;
+}
+
+#hero button {
+    background-color: #1573B1;
     color: white;
-}
-
-#plans {
-    background-color: var(--secondary-color);
-    color: white;
-}
-
-#plans h2 {
-    color: white;
-}
-
-.plan-list {
-    display: flex;
-    justify-content: space-around;
-    flex-wrap: wrap;
-}
-
-.plan {
-    width: 30%;
-    padding: 1rem;
-    margin: 1rem;
-    background-color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    cursor: pointer;
     border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s;
 }
 
-.plan h3, .plan p {
-    color: var(--black);
+#hero button:hover {
+    background-color: #51BD96;
 }
 
-.plan h3 {
-    padding-top: 1rem;
-    text-align: center;
+section h2 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
 }
 
-.plan p {
-    padding-bottom: 3rem;
-    width: 100%;
-    text-align: center;
-}
-
-.plan svg {
-    margin: 1rem 0;
-    width: 75px;
-    height: 75px;
-    fill: var(--black);
-    display: block;
-    margin: auto;
-}
-
-.testimonial-list {
-    display: flex;
-    justify-content: space-around;
-    flex-wrap: wrap;
-}
-
-.testimonial {
-    width: 30%;
-    padding: 1rem;
-    margin: 1rem;
-    background-color: white;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-}
-
-#action {
-    background-color: var(--primary-color);
-    color: white;
-    text-align: center;
-    padding: 2rem 0;
+section p {
+    font-size: 1.2rem;
+    line-height: 1.8;
 }
 
 #action h2 {
     color: white;
 }
 
-.profile-img {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    object-fit: cover;
+#plans .plan-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-between;
 }
 
+#plans .plan {
+    flex: 1 1 calc(33.333% - 20px);
+    background-color: #E1EFE0;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.3s;
+}
+
+#plans .plan:hover {
+    transform: translateY(-10px);
+}
+
+#plans .plan svg {
+    margin: 1rem 0;
+    width: 100px;
+    height: 100px;
+}
+
+#testimonials .testimonial-list {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+#testimonials .testimonial {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-style: italic;
+}
+
+#testimonials .testimonial p:last-child {
+    font-weight: bold;
+    text-align: right;
+    margin-top: 10px;
+}
+
+#mission {
+    background-color: #E1EFE0;
+}
+
+#mission p {
+    margin: 0 auto;
+    max-width: 800px;
+    color: #1D1D35;
+}
+
+/* Board Section */
+#board .profiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+#board .profile {
+    text-align: center;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: calc(25% - 20px);
+    transition: transform 0.3s;
+}
+
+#board .profile:hover {
+    transform: translateY(-10px);
+}
+
+#board .profile-img {
+    width: 125px;
+    height: 125px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#future {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-color: #E1EFE0;
+}
+
+#future p {
+    margin: 0 auto 20px;
+    max-width: 800px;
+    color: #1D1D35;
+}
+
+#conclusion {
+    background-color: #DFF1FF;
+    padding: 60px 0;
+}
+
+#conclusion h2,
+#conclusion h3 {
+    color: #1D1D35;
+}
+
+#conclusion p {
+    margin: 20px 0;
+    color: #1D1D35;
+}
+
+.vertical-line {
+    width: 2px;
+    height: 80px;
+    background-color: #1D1D35;
+    margin: 30px auto;
+    display: block;
+}
+
+#path {
+    background-color: #E1EFE0;
+    padding: 60px 0;
+}
+
+#path ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 auto;
+    max-width: 800px;
+}
+
+#path ul li {
+    background-color: #FFFFFF;
+    border-left: 5px solid #1573B1;
+    padding: 15px 20px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+#path ul li:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+#path ul li strong {
+    color: #008763;
+    font-weight: bold;
+}
+
+#join h2 {
+    color: white;
+}
+
+/* Buttons */
+button {
+    background-color: #1573B1;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #51BD96;
+}
+
+/* Last Section Style */
+section:last-of-type {
+    background-color: #008763;
+    color: white;
+    padding: 60px 0;
+}
+
+section:last-of-type h2 {
+    margin-bottom: 20px;
+}
+
+section:last-of-type p {
+    max-width: 800px;
+    margin: 20px auto;
+}
