@@ -58,8 +58,8 @@ quote_data$BREED <- quote_data$BREED %>%
 margin_sm <- 16
 axis_title_size <- 20
 axis_text_size <- 14
-source <- "Sources: Snowflake UK Pet Insurance Quotes Data - Examples"
-bar_color <- "#E1EFE0"
+bar_color_primary <- "#E1EFE0"
+bar_color_secondary <- "#DFF1FF"
 
 # Define the UI ==============================
 ui <- fluidPage(
@@ -73,19 +73,18 @@ ui <- fluidPage(
       includeHTML("www/pages/mission.html")
     ),
     tabPanel("Data",
-      sidebarLayout(
-        sidebarPanel(
+      verticalLayout(
+        wellPanel(
           h3("The Data!"),
           p("Our dataset contains over one million pet insurance quotes from the UK market, collected over two days. Each quote includes key pricing factors like age, breed, and species for cats and dogs. This dataset enables insurers, analysts, and researchers to make data-driven decisions through market insights, trend identification, and pricing optimization. Understanding customer profiles and current insurance costs is essential for successful market entry."),
         ),
-        mainPanel(
-          h3("UK Pet Insurance Quotes"),
-          DTOutput("table")
-        )
+        br(),
+        h3("UK Pet Insurance Quotes"),
+        DTOutput("table")
       )
     ),
     navbarMenu("Findings",
-      tabPanel("Plot1",
+      tabPanel("Annual Premiums by Breed",
         verticalLayout(
           wellPanel(
             h2("Understanding Pet Insurance Pricing Through Average Annual Premiums"),
@@ -113,21 +112,24 @@ ui <- fluidPage(
           plotOutput("plot1", height = "1200px")
         )
       ),
-      tabPanel("Plot2",
-        sidebarLayout(
-          sidebarPanel(
-            selectInput(
-              "select_species_1",
-              label = h3("Species"),
-              choices = c("Cat", "Dog"),
-              selected = "Cat"
-            ),
-            checkboxInput("static_risk", "Static Risk", value = FALSE),
-            checkboxInput("neutered", "Neutered", value = FALSE)
+      tabPanel("Annual Premiums by Age",
+        verticalLayout(
+          verticalLayout(
+            wellPanel(
+              h2("How Age Affects Monthly Premiums"),
+              p("By examining the average monthly premiums across different age groups and genders, we can identify patterns that influence pricing decisions. For instance, understanding how premiums vary with age and differ between male and female pets can help tailor insurance plans to align with customer expectations and breed-specific risk factors. These insights enable us to create competitive, data-informed pricing models that resonate with the European market's unique demographics, ensuring BeanSprouts remains a trusted choice for pet owners."),
+              selectInput(
+                "select_species_1",
+                label = h3("Species"),
+                choices = c("Cat", "Dog"),
+                selected = "Cat"
+              ),
+              checkboxInput("static_risk", "Static Risk", value = FALSE),
+              checkboxInput("neutered", "Neutered", value = FALSE)
+            )
           ),
-          mainPanel(
-            plotOutput("plot2", height = "1200px")
-          )
+          br(),
+          plotOutput("plot2", height = "1200px")
         )
       ),
     ),
@@ -181,7 +183,13 @@ server <- function(input, output) {
     # Take data_avg_premium_by_breed and reorder the BREED
     # based on the avg_annualpremium
     data_avg_premium_by_breed_sorted <- data_avg_premium_by_breed() %>%
-      mutate(BREED = factor(BREED, levels = BREED[order(avg_annualpremium)]))
+      mutate(
+        BREED = factor(BREED, levels = BREED[order(avg_annualpremium)]),
+        bar_color = ifelse(avg_annualpremium == max(avg_annualpremium), "highest", "rest")
+      )
+
+    breed_with_highest_avg_premium <- data_avg_premium_by_breed_sorted %>%
+      filter(bar_color == "highest")
 
     data_total_quote_by_breed <- quote_data %>%
       filter(BREED %in% data_avg_premium_by_breed_sorted$BREED) %>%
@@ -194,20 +202,37 @@ server <- function(input, output) {
           BREED,
           levels = levels(data_avg_premium_by_breed_sorted$BREED)
         ),
+        bar_color = ifelse(
+          BREED == breed_with_highest_avg_premium$BREED,
+          "highest",
+          "rest"
+        )
       )
 
     data_total_breed_count <- quote_data %>%
       filter(BREED %in% data_avg_premium_by_breed_sorted$BREED)
+
+    avg_highest_premuim_breed_age <- data_total_breed_count %>%
+      filter(BREED == data_avg_premium_by_breed_sorted$BREED) %>%
+      summarize(avg_age = mean(PETAGEYEARS, na.rm = TRUE)) %>%
+      pull(avg_age)
+
+    data_total_breed_count <- data_total_breed_count %>%
+        mutate(bar_fill = ifelse(PETAGEYEARS <= avg_highest_premuim_breed_age, "below_avg", "above_avg"))
 
     # Plot Average annual premium by breed
     a <- ggplot(
       data_avg_premium_by_breed_sorted,
       aes(
         x = BREED,
-        y = avg_annualpremium
+        y = avg_annualpremium,
+        fill = bar_color
       )
     ) +
-      geom_bar(stat = "identity", color = "black", fill = bar_color) +
+      geom_bar(stat = "identity", color = "black") +
+      scale_fill_manual(
+        values = c("highest" = bar_color_primary, "rest" = bar_color_secondary)
+      ) +
       scale_y_continuous(labels = scales::label_dollar(prefix = "£")) +
       labs(
         x = "Breed",
@@ -234,8 +259,11 @@ server <- function(input, output) {
       )
 
     # Plot Total quotes by breed
-    b <- ggplot(data_total_quote_by_breed, aes(x = BREED, y = total_quotes)) +
-      geom_bar(stat = "identity", color = "black", fill = bar_color) +
+    b <- ggplot(data_total_quote_by_breed, aes(x = reorder(BREED, total_quotes), y = total_quotes, fill = bar_color)) +
+      geom_bar(stat = "identity", color = "black") +
+      scale_fill_manual(
+        values = c("highest" = bar_color_primary, "rest" = bar_color_secondary)
+      ) +
       scale_y_continuous(labels = scales::comma) +
       labs(
         x = "Breed"
@@ -253,12 +281,17 @@ server <- function(input, output) {
           size = axis_title_size
         ),
         axis.title.y = element_blank(),
-        panel.grid.major.x = element_blank()
+        panel.grid.major.x = element_blank(),
+        legend.position = "none"
       )
 
     # Plot Number of quotes by pet age
     c <- ggplot(data_total_breed_count, aes(x = PETAGEYEARS)) +
-      geom_histogram(binwidth = 1, color = "black", fill = bar_color) +
+      geom_histogram(
+        binwidth = 1,
+        color = "black",
+        fill = bar_color_secondary
+      ) +
       scale_y_continuous(labels = scales::comma) +
       labs(
         x = "Pet Age (Years)",
@@ -286,7 +319,11 @@ server <- function(input, output) {
     c_grob <- ggplotGrob(c)
 
     # Arrange the plots using grid.arrange
-    grid.arrange(a_grob, arrangeGrob(c_grob, b_grob, ncol = 2, widths = c(1, 2)), nrow = 2)
+    grid.arrange(
+      a_grob,
+      arrangeGrob(c_grob, b_grob, ncol = 2, widths = c(1, 2)),
+      nrow = 2
+    )
   })
 
   # Plot 2 ==================================
@@ -311,21 +348,29 @@ server <- function(input, output) {
       aes(x = PETAGEYEARS, y = avg_monthly_installment, fill = PETGENDER)
     ) +
       geom_col(position = "dodge", color = "black", width = 0.6) +
+      scale_fill_manual(values = c("Male" = bar_color_secondary, "Female" = bar_color_primary)) +
       labs(
-        title = "How Age Affects Monthly Premiums",
-        subtitle = "Exploring the Relationship Between Pet Age and Average Monthly Premium Costs",
         x = "Pet Age (Years)",
-        y = "Average Monthly Premium Instalment",
-        caption = source
+        y = "Average Monthly Premium Instalment"
       ) +
       theme_minimal() +
       scale_y_continuous(labels = scales::label_dollar(prefix = "£")) +
       theme(
+        axis.text.x = element_text(size = axis_text_size),
+        axis.text.y = element_text(size = axis_text_size),
         axis.title.x = element_text(
-          margin = margin(t = margin_sm, b = margin_sm)
+          margin = margin(t = margin_sm, b = margin_sm),
+          size = axis_title_size
         ),
-        axis.title.y = element_text(margin = margin(r = margin_sm)),
-        legend.position = "top"
+        axis.title.y = element_text(
+          margin = margin(r = margin_sm),
+          size = axis_title_size
+        ),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        legend.position = "top",
+        legend.text = element_text(size = axis_text_size),
+        legend.title = element_blank(),
       )
   })
 
