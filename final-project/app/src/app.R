@@ -11,7 +11,7 @@ library(shiny)
 
 # Load resources ============================
 # TODO: load full data set
-url <- "https://github.com/rosborne132/rNotebook/raw/main/final-project/data/Quote_Data_Small.csv.zip"
+url <- "https://github.com/rosborne132/rNotebook/raw/main/final-project/data/Quote_Data.csv.zip"
 ap_model <- readRDS("www/models/ap_model.rds")
 mpi_model <- readRDS("www/models/mpi_model.rds")
 
