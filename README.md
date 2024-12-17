@@ -18,3 +18,7 @@ install.packages("jsonlite")
 ### Running the Notebooks
 
 You can open and run the .rmd files in RStudio. Simply open the file and click the "Knit" button to generate the output document.
+
+### Shiny apps
+
+- [Final Project](https://rosborne132.shinyapps.io/bean-sprouts-app/)
